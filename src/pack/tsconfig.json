@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "commonjs",
+        "outDir": "../scripts",
+        "rootDir": ".",
+        "moduleResolution": "Node",
+        "typeRoots": ["../node_modules/@types", "../node_modules/web-ext-types", "../node_modules/mail-ext-types"],
+    }
+
+}

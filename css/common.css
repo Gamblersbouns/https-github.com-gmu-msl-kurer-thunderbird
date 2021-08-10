@@ -1,0 +1,59 @@
+.font-no-select {
+    user-select: none;
+    cursor: default;
+}
+
+/* Reenable text highlighting/selection*/
+.font-allow-select {
+    user-select: auto;
+    cursor: auto;
+}
+
+body {
+    background-color: #0b1419;
+}
+
+h1,h2,h3,h4,h5,h6 {
+    color: #98cee8;
+    border-color: #2d6edb;
+}
+
+div, p, code, pre {
+    color: #d4e3ea;
+    border-color: #98cee8;
+}
+
+
+button,.button {
+    color: #d4e3ea;
+    border-color: #d4e3ea;
+}
+
+input, textarea{
+    color: darkslategray
+}
+
+button:disabled, button:hover:disabled {
+    color: #d4e3eac4;
+    border-color: #d4e3eac4;
+    background-color: rgba(250,250,250,.2)
+}
+
+button:hover, .button:hover, button:hover:focus {
+    color: #98cee8;
+    border-color: #98cee8;
+}
+
+button:active {
+    background-color: rgba(200,200,250,.3)
+}
+
+button:focus, .button:focus {
+    color: #d4e3ea;
+    border-color: #d4e3ea;
+}
+
+code {
+    background-color: darkslategray; 
+    border: none;
+}
