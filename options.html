@@ -12,24 +12,72 @@
     <link rel="stylesheet" href="css/common.css">
   </head>
 
-  <body>
-    <div class="container" style="padding:5px;" >
-        <form id="mainForm">
-            <h5>Private key for signing and decrypting</h5>
-            <textarea class="browser-style" id="privateKey" placeholder="[Paste PEM text]"></textarea><br>
-            <h5>Cache of known public keys</h5>
-            For <b>debug</b> purposes you can modify a single entry
-            <div id="cacheOptions" class="browser-style" style="margin-left:20px">
-                <label>email address</label>
-                <input type="text" id="1_cacheName" placeholder="email"/>
-                <label>PEM certificate text</label>
-                <textarea class="browser-style" id="1_cacheCert" placeholder="[Undefined]"></textarea>
+  <body style="overflow:hidden;">
+    <div style="padding:15px;" >
+      <div class="row" style="margin-top: 10px;padding-bottom:0px; width:250px; margin:auto;">
+            <div class="u-pull-right">
+                <img src="images/icon.png" draggable="false">
             </div>
+            <div>
+                <h1 class="font-no-select" style="border-left: 4px solid #98cee8; margin-right:0px; padding-right:0px; letter-spacing: 8px;"><span style="color:#2d6edb;">k</span>urer</h1>
+            </div>
+        </div>
+
+        <form id="mainForm" style="margin-bottom:0px;">
+          <div class="hl-border-strong">
+            <h6>Private key for signing and decrypting</h6>
+            <textarea class="browser-style centered pem-input" id="privateKey" placeholder="[Paste PEM text]"></textarea>
+          </div>
+
+          <div class="hl-border-strong"  style="margin-top:20px;">
+            <h6>Cache of known public keys</h6>
+            For <b>debug</b> purposes you can modify a single entry
+            <div id="cacheOptions" class="browser-style hl-border-weak">
+                <label>email address</label>
+                <input class="centered" type="text" id="1_cacheName" placeholder="email"/>
+                <label>PEM certificate text</label>
+                <textarea class="browser-style centered pem-input" id="1_cacheCert" placeholder="[Undefined]"></textarea>
+            </div>
+          </div>
+
+          <div class="hl-border-strong"  style="margin-top:20px;">
+            <h6>Reading message option</h6>
+            <div class="switchBox">
+              <div>Only manually decrypt</div>
+              <label class="switch"><input id="opt_autoDecrypt" type="checkbox" /><div></div></label>
+              <div>Auto-decrypt detected on read</div>
+            </div>
+          </div>
+
+          <div class="hl-border-strong"  style="margin-top:20px;">
+            <h6>Composing message option</h6>
+            <div class="switchBox">
+              <div>Only manually encrypt</div>
+              <label class="switch"><input id="opt_autoEncrypt" type="checkbox" /><div></div></label>
+              <div>Auto-encrypt on send</div>
+            </div>
+            <div class="switchBox">
+              <div>Only manually sign</div>
+              <label class="switch"><input id="opt_autoSign" type="checkbox" /><div></div></label>
+              <div>Auto-sign on send</div>
+            </div>
+              
+          </div>
+          <!-- Save button -->
+          <div style="margin-top: 15px; display: flex; justify-content: space-between;" >
             <button class="browser-style" type="submit">Save</button>
+            <button class="browser-style" type="reset">Reset</button>
+          </div>
+            
+
+          
         </form>
     </div>
-    <div style="padding:10px; font-size:smaller; background-color:rgba(55,55,65,.5);">
-        <div id="statusbar" style="display: inline-block; padding-left:8px; border-left: 2px solid #98cee8;">Status</div>
+
+    <div style="display:flex; align-items: center; padding:10px; font-size:smaller; background-color:rgba(55,55,65,.5);">
+        <div id="statusbar" style="padding-left:8px; border-left: 2px solid #98cee8; min-height: 20px;">
+          <div>Status</div>
+        </div>
     </div>
     <script src="scripts/options.js"></script>
     
