@@ -41,7 +41,7 @@
           </div>
 
           <div class="hl-border-strong"  style="margin-top:20px;">
-            <h6>Reading message option</h6>
+            <h6>Reading message</h6>
             <div class="switchBox">
               <div>Only manually decrypt</div>
               <label class="switch"><input id="opt_autoDecrypt" type="checkbox" /><div></div></label>
@@ -50,7 +50,7 @@
           </div>
 
           <div class="hl-border-strong"  style="margin-top:20px;">
-            <h6>Composing message option</h6>
+            <h6>Composing messages</h6>
             <div class="switchBox">
               <div>Only manually encrypt</div>
               <label class="switch"><input id="opt_autoEncrypt" type="checkbox" /><div></div></label>
@@ -61,7 +61,13 @@
               <label class="switch"><input id="opt_autoSign" type="checkbox" /><div></div></label>
               <div>Auto-sign on send</div>
             </div>
-              
+            <br>
+            If no valid certificate found for recipient over DANE:
+            <div class="switchBox">
+              <div>Send unencrypted silently</div>
+              <label class="switch"><input id="opt_sendWarning" type="checkbox" /><div></div></label>
+              <div>Show warning popup</div>
+            </div>
           </div>
           <!-- Save button -->
           <div style="margin-top: 15px; display: flex; justify-content: space-between;" >

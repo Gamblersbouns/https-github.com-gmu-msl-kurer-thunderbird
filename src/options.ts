@@ -5,22 +5,8 @@ let cacheCert:HTMLTextAreaElement
 let statusBar: HTMLDivElement
 let autoEncrypt: HTMLInputElement
 let autoDecrypt: HTMLInputElement
+let sendWarning: HTMLInputElement
 let autoSign: HTMLInputElement
-
-/** The object format of our stored options data */
-type Options = {
-    /** Unencrypted private key (temp. testing use) */
-    privateKey?: string
-    /** Array of cached name-cert associations */
-    cache?: {
-        name: string
-        cert: string
-    }[]
-    /** Toggle options for auto encrypt/decrypt/sign */
-    autoDecrypt?: boolean
-    autoEncrypt?: boolean
-    autoSign?: boolean
-}
 
 window.onload = () => {
     mainForm= <HTMLFormElement>document.getElementById("mainForm")
@@ -31,11 +17,12 @@ window.onload = () => {
 
     autoEncrypt = <HTMLInputElement>document.getElementById("opt_autoEncrypt")
     autoDecrypt = <HTMLInputElement>document.getElementById("opt_autoDecrypt")
+    sendWarning = <HTMLInputElement>document.getElementById("opt_sendWarning")
     autoSign = <HTMLInputElement>document.getElementById("opt_autoSign")
 
     /* Save options of form submit*/
     mainForm.onsubmit = ev=>{
-        let optionsToSet:Options = {
+        let optionsToSet:Options = {options: {
             privateKey: privateKey.value.length>0 ? privateKey.value : null,
             cache: (cacheName.value.length>0 && cacheCert.value.length>0) ?
                 [{
@@ -45,9 +32,10 @@ window.onload = () => {
             // saving the toggle options
             autoEncrypt: !!autoEncrypt.checked,
             autoDecrypt: !!autoDecrypt.checked,
+            warningUnsecure: !!sendWarning.checked,
             autoSign: !!autoSign.checked
-        }   
-        browser.storage.local.set({options:optionsToSet})
+        }   }
+        browser.storage.local.set(optionsToSet)
         .then(
             ()=>{showStatus(/*html*/`<span style="color:#CBEFB6">Saved</span> successfully`)},
             reason=>{showStatus(/*html*/`<span style="color:#D74E09">Error</span> on save: ${reason}`)}
@@ -59,9 +47,9 @@ window.onload = () => {
     /* Load options on form reset */
     mainForm.onreset = ev => {
         browser.storage.local.get('options')
-        .then((result)=>{
+        .then((result:Options)=>{
             if (!result.options) {statusBar.innerText = `No previously saved options found`; return}
-            let options:Options = <Options>result.options
+            let options = result.options
             if (options.privateKey!==undefined) {
                 privateKey.value = privateKey.innerHTML = options.privateKey
             }
@@ -69,9 +57,10 @@ window.onload = () => {
                 cacheName.innerHTML = cacheName.value = options.cache[0].name
                 cacheCert.value = cacheCert.innerHTML = options.cache[0].cert
             }
-            if (options.autoEncrypt && autoEncrypt.checked != options.autoEncrypt )  autoEncrypt.click()
-            if (options.autoDecrypt && autoDecrypt.checked != options.autoDecrypt ) autoDecrypt.click() 
-            if (options.autoSign && autoSign.checked != options.autoSign) autoSign.click()
+            if (options.autoEncrypt!=null && autoEncrypt.checked != options.autoEncrypt )  autoEncrypt.click()
+            if (options.autoDecrypt!=null && autoDecrypt.checked != options.autoDecrypt ) autoDecrypt.click() 
+            if (options.warningUnsecure!=null && sendWarning.checked != options.warningUnsecure ) sendWarning.click() 
+            if (options.autoSign!=null && autoSign.checked != options.autoSign) autoSign.click()
             showStatus( /*html*/`<span style="color:#CBEFB6">Loaded</span> successfully`)
         }, reason=>{showStatus(/*html*/`<span style="color:#D74E09">Error</span> on load: ${reason}`)} )
         ev.preventDefault()

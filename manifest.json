@@ -35,7 +35,7 @@
         "default_icon": "images/icon-32.png"
     },
     "permissions": [
-        "storage", "compose", "messagesModify", "activeTab", "tabs"
+        "storage", "compose", "messagesRead", "messagesModify", "activeTab", "tabs"
     ],
     "icons": {
         "64": "images/icon.png",

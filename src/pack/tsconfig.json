@@ -3,9 +3,9 @@
         "target": "ESNext",
         "module": "commonjs",
         "outDir": "../scripts",
-        "rootDir": ".",
+        "rootDir": "..",
         "moduleResolution": "Node",
-        "typeRoots": ["../node_modules/@types", "../node_modules/web-ext-types", "../node_modules/mail-ext-types"],
-    }
-
+        "typeRoots": ["../node_modules/@types", "../node_modules/web-ext-types", "../node_modules/mail-ext-types", "../local_types"],
+    },
+    "include": ["../local_types","."]
 }

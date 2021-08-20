@@ -4,96 +4,149 @@
  */
 import * as Common from "./common";
 
-/** Private key just for testing. */
-const test_key = 
-`
------BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDOvu1G4nwuRHrX
-MwJPRmbva2KEiEhu3c+Tsf8EG821tfhmZz0XdtN16cCvBhoAbzM+oij/X2u87fFm
-yNCUfZUpvWRuXauzVjzyd+8SLmbvHzxhycj3K9ZCu6fcKRsoIm1t56mS3iEzHHMn
-qv6GBmquJaoAnv6TWDnO8PeSBbE556C8XDaWto03c2Abt/S7RVcF3FRL92FtNoGW
-TDGHKyd75HE8T+Wavjv14sl+ILImPipduEAgvLWuYn8fa9Ne8twkAGRrPwzpxpPe
-OwX6BjPUn92PXC/cK4zrvaUmvOGVh47+ngl7h+s+ZN28qLrmdleYTOufsMmcYNzz
-k30rDJ+rAgMBAAECggEAGH9UEzmj+EGCArzXEbioWscxIb4aQxTCU2BcdMqsmdLp
-j4y9FuosDUU44SRKcXG7szi4veW7GORi3ch+upGU2qDH5THxNetKhnqCl/dql/vu
-BjJIP01w8nBU6Afw4VUO/V5dX/s1GN7OoE0pIo1hF6h7193/EUt7chNoamOFR/R9
-N6/NESujIgVZpOo26cj6wfYnMaGO/YOahutT275IIYwzjVQYTwLTcBdWfyqmU/r0
-kx9FCSgjEooYhP6MgyZ5S1/huTz7ELhqqWw2JWX3yt02KfjR5dofGr523Qv7xGff
-boxhrD+0YkjyhCXrYUXIbWZrqyTNknNjnxPPW2+ljQKBgQDorpBYvi2FaUv94qwC
-Mhuek5SJlqTfvKS2D6Ayab31HfuHW9bkGppy2qtdo8/oQjWefSEQdoJuz7lTaPfG
-LPD4GqSnkZq1VCOZMLb9sZcaRr2ckuM51f2huvqsrAIBqJZmX4nq5J4vOudp1zVb
-qinUu4OinHBII/HnliPfrDiONwKBgQDjdvmMrwYgsIz2xt9ZgZFZRkoxeLBblAi4
-PXEket1vS1KEljpIbJHg2ETvQaTJeXGkJ4oLPVWMhZSMYiwzgxrhjXcQRHqlbYig
-Y2lgdtjImC+Gp41Bj5DeWsIozsQk9e/tg+/doAQJhI8L+7i3O5no1nY1MqRah2KL
-VHR2ovFgLQKBgFv5DGOXoMS4T2pmm9kuV06CRVdxbXBmz7CLUqY6t/RYyqDBg5qc
-jWpS1yPnaXoEGc+w5E3umjYU88ttlWsHPqTDW0xFOKLuRDf8UojLFtAzICXwxdKJ
-rHyuPQHd59kh+3kx0IFBpulCXlCu2Y+HHovRJwIy1gsd8jO5XCrAl4ZXAoGAby0X
-i8uAEzo3q+ZIBFdv01KnsMZsbFZObL6bLllfIaaPDn7evcdTBbKu/sH26QKSqMkq
-j5PK3IPtty/EqujJmrSqHSlbSL/gp4PvXVa5XlID6Ky8Pe8Nv6BchdWJyQbr3gs+
-kfREBOLlh9Xg0q4u677mx9mYuyaw46jDw7iggYECgYEAuSmZT6LzftUaQtE2oUKq
-rJ9bz7gqXZQnVvbWuCelvxbAt8S84K7522geUPqTQf1o+QNdh0E/JVREiHu6B+QB
-n9z1ff6580uztO+0ZbM7kpzTpXDYmgGFrRyLN76VhoaBafUR4KxCIml2zbUhirBh
-us12FEPujm2Z4mPbqIDQgm0=
------END PRIVATE KEY-----
-`
-/** Matching public cert just for testing */
-const test_cert = 
-`
------BEGIN CERTIFICATE-----
-MIIC0zCCAb2gAwIBAgIBATALBgkqhkiG9w0BAQswHjEcMAkGA1UEBhMCUlUwDwYD
-VQQDHggAVABlAHMAdDAeFw0xNjAyMDEwNTAwMDBaFw0xOTAyMDEwNTAwMDBaMB4x
-HDAJBgNVBAYTAlJVMA8GA1UEAx4IAFQAZQBzAHQwggEiMA0GCSqGSIb3DQEBAQUA
-A4IBDwAwggEKAoIBAQDOvu1G4nwuRHrXMwJPRmbva2KEiEhu3c+Tsf8EG821tfhm
-Zz0XdtN16cCvBhoAbzM+oij/X2u87fFmyNCUfZUpvWRuXauzVjzyd+8SLmbvHzxh
-ycj3K9ZCu6fcKRsoIm1t56mS3iEzHHMnqv6GBmquJaoAnv6TWDnO8PeSBbE556C8
-XDaWto03c2Abt/S7RVcF3FRL92FtNoGWTDGHKyd75HE8T+Wavjv14sl+ILImPipd
-uEAgvLWuYn8fa9Ne8twkAGRrPwzpxpPeOwX6BjPUn92PXC/cK4zrvaUmvOGVh47+
-ngl7h+s+ZN28qLrmdleYTOufsMmcYNzzk30rDJ+rAgMBAAGjIDAeMA8GA1UdEwQI
-MAYBAf8CAQMwCwYDVR0PBAQDAgAGMAsGCSqGSIb3DQEBCwOCAQEAEd9FkGtoWI7R
-Npmid/4TjI/sziPJ54eM7XDXwwV7gPSTMY3vVJ/MHGxwT9ZYbT2+T6PvhQIdSEs+
-a3Hn454ywqA37HFb37nE93bU5ss+uZ1RyICR24xFuMs+n0iRXD8MTZI+HEaTZ6tl
-lRqIKG7jM5JSJwGoladoPl8gN+Dp0StqQHp8PmTepBhnmiboPOwMifSoUOcF151q
-kilxM5V6RZ1UWEkagZUPI7yZatabOBh89seMiKgul76ROacXlhWIU384ZUDn0ADi
-E1W4oQ4MAX8TuY06fg1HIGBz17kKC/x4YJ8ZAt0imXv4+oAcq9cNuCvyG6R+u+3T
-DKqBBM8G3A==
------END CERTIFICATE-----
-`
-/** Function executed on creation of a new compose tab */
-function injectCompose(tab:browser.tabs.Tab) {
-    console.log(`opened compose tab with id=${tab.id}`)
-}
-/** Function executed on creation of a new display (message reading) tab*/
-function injectDisplay(tab:browser.tabs.Tab) {
-    console.log(`opened display tab with id=${tab.id}`)
+/** Up to date copy of currently set options */
+let options: Options = null
+fetchOptionsOnStartup()
+
+
+/** Open communication ports among foreground scripts, mostly to stream updates to options and logs */
+let ports: browser.runtime.Port[] = []
+
+browser.runtime.onConnect.addListener(port=>{
+    ports.push(port)
+    port.onMessage.addListener((msg:Message)=>{
+        if (msg.type=="getOptions") {
+            let msg:Message = {
+                type: "sendOptions",
+                payload: options
+            } 
+            port.postMessage(msg)
+        } 
+        else if (msg.type=="log") console.log(msg.payload)
+        else if (msg.type=="dir") console.dir(msg.payload)
+    })
+    port.onDisconnect.addListener(p=> ports = ports.filter(item => item !== p) )
+})
+
+const defaultOptions: Options = {
+    options: {
+        autoDecrypt:true, autoEncrypt:true, autoSign:true, warningUnsecure:true
+    }
 }
 
-browser.runtime.onMessage.addListener((data,sender)=>{
+async function fetchOptionsOnStartup() {
+    options = await browser.storage.local.get("options")
+    if (!options) await browser.storage.local.set(defaultOptions)
+    console.log("background got options first time")
+}
+
+document.addEventListener("DOMContentLoaded",registerScripts)
+
+async function registerScripts() {
+    try {
+        await messenger.composeScripts.register({
+        css: [ {file: "css/notification-bar.css" }],
+        js: [ {file: "/scripts/notifBar.js"} ]
+        })
+        
+        await messenger.messageDisplayScripts.register({
+            css: [ {file: "css/notification-bar.css" }],
+            js: [ {file: "/scripts/notifBar.js"} ]
+        })
+    } catch (e) {console.error(e)}
+}
+
+
+// update running copy of options if it is changed
+browser.storage.onChanged.addListener(changes=>{
+    if (!changes.options) return // if options were unchanged, don't care
+    Object.assign(options,changes.options.newValue)
+    console.log("background updated options")
+    // communicate the changes in options
+    ports.forEach(port => {
+        let msg:Message = {
+            type: "sendOptions",
+            payload: options
+        }
+        port.postMessage(msg)
+    })
+    
+})
+
+browser.runtime.onMessage.addListener((data: Message)=>{
     // test message just sends back the date and an echo with a random delay of a couple seconds
-    if (data.type == "test_msg") {
-        return new Promise(resolve=>{
-            setTimeout(()=>{ resolve(
-                { response: `return message on ${(new Date()).toLocaleDateString()}`, echo: data.echo }
-            )},Math.random()*3000+500)
-        }) 
-    }
+    // if (data.type == "test_msg") {
+    //     return new Promise(resolve=>{
+    //         setTimeout(()=>{ resolve(
+    //             { response: `return message on ${(new Date()).toLocaleDateString()}`, echo: data.echo }
+    //         )},Math.random()*3000+500)
+    //     }) 
+    // }
     /* test message which returns the mime string of the given text, with preset keys, certs, and headers 
             message object: {
                 type: "get_encrypted_mime_str",
                 msg: <string body of mime message>   
             }
     */
-    if (data.type == "get_encrypted_mime_str") {
-        return Common.smimeEncrypt(data.msg,test_cert)
+
+    // if (data.type == "get_encrypted_mime_str") {
+    //     return Common.smimeEncrypt(data.msg,test_cert)
+    // }
+
+    if (data.type=="encrypt") {
+        // search for recipient in trust cache
+        let found = options.options.cache.find(item=>{item.name == data.recipient})
+        if (!found) return new Promise((res,rej)=>{rej("Recipient cert not found")})
+        return Common.smimeEncrypt(data.plaintext, found.cert)
+    }
+
+    if (data.type=="decrypt") {
+        return Common.smimeDecrypt(data.ciphertext, options.options.privateKey, options.options.cache[0].cert)
     }
 })
 
-browser.tabs.onCreated.addListener(tab=>{
-    console.log(`Opened tab detected:\n${JSON.stringify(tab)}`)
-    browser.windows.get(tab.windowId).then(window=>{
-        if (<any>(window.type)=="messageCompose") injectCompose(tab)
-        else if (<any>(window.type)=="messageDisplay") injectDisplay(tab)
-    })
+messenger.compose.onBeforeSend.addListener( (tab,dets)=> {
+
+    console.log("on before send!")
+    let htmlToPrepend = /*html*/ 
+`
+<div style="background-color: #0b1419; color: #98cee8; width:95%; margin: 10px auto; border-radius:0.8em;padding:5px; display:flex; justify-content:center;">Blocked send: ${(Math.random()*89999+10000).toFixed(0)}
+</div> 
+`
+    let insert = dets.body.indexOf("<body>") + 6
+    let newBody = dets.body.substring(0,insert) + htmlToPrepend + dets.body.substring(insert)
+    let newDets: typeof dets = {body: newBody}
+    return {cancel: false, details:newDets}
+    // let cancel = false; let newDetails: messenger.compose.ComposeDetails = null
+    // let found = options.options.cache.find(item=>{item.name == dets.to[0]})
+    // if (!found) {
+    //     cancel = true
+    //     console.log("Recipient cert not found")
+    //     return {cancel: cancel, details: newDetails}
+    // }
+    // Common.smimeEncrypt(dets.body, found.cert).finally(
+
+    // )
+    // return
 })
+
+messenger.messageDisplay.onMessageDisplayed.addListener( (tab,msg)=>{
+    // for testing, sends some notifications after a while
+    messenger.messages.getFull(msg.id)
+    .then(msgPart=>{
+        console.dir(msgPart)
+        let notifs: Message[] = [
+            {type: "notif", payload: ["Hi, this is a notification from Kurer!"]},
+            {type: "notif", payload: [`This email has <span class="color-pos">${msgPart.parts[0].body.length}</span> characters.`]},
+            {type: "notif", payload: ["This email was not <b>encrypted</b> or <b>signed</b>"], color: "neg"},
+        ]
+        window.setTimeout(()=>{browser.tabs.sendMessage(tab.id,notifs[0])},500)
+        window.setTimeout(()=>{browser.tabs.sendMessage(tab.id,notifs[1])},2500)
+        window.setTimeout(()=>{browser.tabs.sendMessage(tab.id,notifs[2])},5500)
+    })
+
+})
+
 
 console.log("Background script finished loading 123!")
 

@@ -152,5 +152,6 @@ div.switchBox > div:not(.checked) {
  * ---------------------------------------------- */
  .text-focus{animation:focus-in-contract .6s cubic-bezier(.25,.46,.45,.94) both}
  .color-change{animation:color-change-2x .8s alternate both}
+ 
  @keyframes focus-in-contract{0%{letter-spacing:1em;filter:blur(12px);opacity:0}100%{filter:blur(0);opacity:1}}
  @keyframes color-change-2x{0%{background-color: rgba(55,55,65,1);}100%{background:rgba(55,55,65,.5)}}
