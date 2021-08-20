@@ -820,29 +820,3 @@ class MimeNode {
 /*======================================================================================
   END of adapted content
 ========================================================================================*/ 
-/**
- * 
- * @param elem The HTML div element
- * @param duration number of ms to flash - default is 400
- */
-export function flashElem(elem:HTMLDivElement,duration?:number) {
-  if (duration==null) duration = 400
-  let easeFunc = t => t*(2-t) // quadratic ease-out
-  let luma = c => 0.2126*c.r + 0.7152*c.g + 0.0722*c.b // linear luminence (flash up or down)
-  let startColors = window.getComputedStyle(elem).backgroundColor.trim().slice(4,-1).split(',')
-  let color1 = {
-    r: parseInt(startColors[0]), 
-    g: parseInt(startColors[1]), 
-    b: parseInt(startColors[2]),
-    a: null
-  }
-  if (startColors[3]) color1.a = parseInt(startColors[3])
-}
-
-// module.exports = {
-//     decodeHtml: decodeHtml,
-//     encodeHtml: encodeHtml,
-//     smimeEncrypt: smimeEncrypt,
-//     smimeDecrypt: smimeDecrypt,
-//     decodePem: decodePem
-// }
