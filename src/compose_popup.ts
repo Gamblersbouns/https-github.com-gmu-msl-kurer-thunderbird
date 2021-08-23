@@ -18,22 +18,30 @@ window.addEventListener('load',()=>{
         optionsUpdate(msg.payload)
         console.log("composePopup updated options")
     })
+    mainButton.addEventListener("click",()=>{onClickEncrypt()})
 })
 
 // @ts-ignore
 function optionsUpdate(newOptions: Options) {
     options = newOptions
-
+    console.dir(options)
     if (options && options.options) {
         if (options.options.autoEncrypt) {
             mainButton.textContent = "Will Encrypt on Send"
             mainButton.disabled = true
             desc.innerText = "Mail will be encrypted on sending for recipients whose certs can be found via DANE"
         }
-        else if (options.options.autoDecrypt) {
+        else if (!options.options.autoEncrypt) {
             mainButton.textContent = "Encrypt"
             mainButton.disabled = false
             desc.innerText = "You can manually choose to encrypt this message for the recipient"
         }
     }
+}
+
+function onClickEncrypt(){
+    mainButton.disabled = true
+    browser.runtime.sendMessage({type:"encrypt"}as Message)
+    window.setTimeout(()=>{mainButton.disabled = false}, 1000)
+    
 }

@@ -21,8 +21,8 @@ type Options = {
 type Message = 
     {type: "getOptions"} |
     {type: "sendOptions", payload: Options} |
-    {type: "encrypt", plaintext: string, recipient: string} |
+    {type: "encrypt", tabId?: number} |
     {type: "decrypt", ciphertext: string} |
     {type: "log", payload: any} |
     {type: "dir", payload: any} |
-    {type: "notif", payload: string[], color?: 'pos' | 'mid' | 'neg' }
+    {type: "notif", payload: string[], color?: 'pos' | 'mid' | 'neg', delay?: number}

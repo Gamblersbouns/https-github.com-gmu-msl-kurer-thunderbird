@@ -4,6 +4,7 @@
 
 //const WebCrypto = require("@peculiar/webcrypto").Crypto // unneeded if we assume browser compat.
 import { Convert } from "pvtsutils"
+import {stringToArrayBuffer} from "pvutils"
 //const MimeBuilder = require("emailjs-mime-builder") 
 import smimeParse from "emailjs-mime-parser" 
 import * as asn1js from "asn1js"
@@ -12,7 +13,9 @@ import { base64Encode, quotedPrintableEncode, foldLines, parseHeaderValue } from
 import { detectMimeType } from 'emailjs-mime-types'
 import { convertAddresses, parseAddresses, encodeHeaderValue, normalizeHeaderKey, 
     generateBoundary, isPlainText, buildHeaderValue } from 'emailjs-mime-builder/dist/utils'  
-import { PemConverter } from "@peculiar/x509"
+//import { PemConverter } from "@peculiar/x509"
+import * as DTypes from "../local_types/dane" 
+import * as forge from "node-forge"
 
 /** Returns Base64 array from ascii PEM format */
 function decodePem(pem:string) {
@@ -26,6 +29,98 @@ function decodePem(pem:string) {
         res.push(Convert.FromBase64(base64));
     }
     return res;
+}
+/*!
+ * MIT License
+ * 
+ * Copyright (c) Peculiar Ventures. All rights reserved.
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * 
+ */
+class PemConverter {
+  CertificateTag; CertificateRequestTag; PublicKeyTag; PrivateKeyTag
+
+  constructor() {
+      this.CertificateTag = "CERTIFICATE";
+      this.CertificateRequestTag = "CERTIFICATE REQUEST";
+      this.PublicKeyTag = "PUBLIC KEY";
+      this.PrivateKeyTag = "PRIVATE KEY";
+  }
+  static isPem(data) {
+      return typeof data === "string"
+          && /-{5}BEGIN [A-Z0-9 ]+-{5}([a-zA-Z0-9=+/\n\r]+)-{5}END [A-Z0-9 ]+-{5}/g.test(data);
+  }
+  static decode(pem) {
+      const pattern = /-{5}BEGIN [A-Z0-9 ]+-{5}([a-zA-Z0-9=+/\n\r]+)-{5}END [A-Z0-9 ]+-{5}/g;
+      const res = [];
+      let matches = null;
+      while (matches = pattern.exec(pem)) {
+          const base64 = matches[1]
+              .replace(/\r/g, "")
+              .replace(/\n/g, "");
+          res.push(Convert.FromBase64(base64));
+      }
+      return res;
+  }
+  static encode(rawData, tag) {
+      if (Array.isArray(rawData)) {
+          const raws = new Array();
+          rawData.forEach(element => {
+              raws.push(this.encodeBuffer(element, tag));
+          });
+          return raws.join("\n");
+      }
+      else {
+          return this.encodeBuffer(rawData, tag);
+      }
+  }
+  static encodeBuffer(rawData, tag) {
+      const base64 = Convert.ToBase64(rawData);
+      let sliced;
+      let offset = 0;
+      const rows = Array();
+      while (offset < base64.length) {
+          if (base64.length - offset < 64) {
+              sliced = base64.substring(offset);
+          }
+          else {
+              sliced = base64.substring(offset, offset + 64);
+              offset += 64;
+          }
+          if (sliced.length !== 0) {
+              rows.push(sliced);
+              if (sliced.length < 64) {
+                  break;
+              }
+          }
+          else {
+              break;
+          }
+      }
+      const upperCaseTag = tag.toLocaleUpperCase();
+      return `-----BEGIN ${upperCaseTag}-----\n${rows.join("\n")}\n-----END ${upperCaseTag}-----`;
+  }
+}
+
+export function PEMencode(a, b) {
+  return PemConverter.encode(a,b)
 }
 
 /** Simply return the inner text of a string representing html */
@@ -58,7 +153,7 @@ pkijs.setEngine(
  * @param {string} encryptionAlgo algorithm to encrypt the text with ("AES-CBC" or "AES-GCM")
  * @param {Number} length length to encrypt the text to (default 128)
  */
-export async function smimeEncrypt(
+ export async function smimeEncrypt(
   text: string,
   certificatePem: string,
   oaepHashAlgo: string = "SHA-256",
@@ -66,38 +161,42 @@ export async function smimeEncrypt(
   length: Number = 128
 ): Promise<string> {
   // Decode input certificate
-  try {
-    const asn1 = asn1js.fromBER(decodePem(certificatePem)[0]);
-    const certSimpl = new pkijs.Certificate({ schema: asn1.result });
+  const asn1 = asn1js.fromBER(PemConverter.decode(certificatePem)[0]);
+  const certSimpl = new pkijs.Certificate({ schema: asn1.result });
 
-    const cmsEnveloped = new pkijs.EnvelopedData();
+  const cmsEnveloped = new pkijs.EnvelopedData();
 
-    cmsEnveloped.addRecipientByCertificate(certSimpl, { oaepHashAlgorithm: oaepHashAlgo });
+  cmsEnveloped.addRecipientByCertificate(certSimpl, {
+      oaepHashAlgorithm: oaepHashAlgo,
+  });
 
-    await cmsEnveloped.encrypt({ name: encryptionAlgo, length: length }, Convert.FromUtf8String(text));
+  await cmsEnveloped.encrypt(
+      { name: encryptionAlgo, length: length },
+      Convert.FromUtf8String(text)
+  );
 
-    const cmsContentSimpl = new pkijs.ContentInfo();
-    cmsContentSimpl.contentType = "1.2.840.113549.1.7.3";
-    cmsContentSimpl.content = cmsEnveloped.toSchema();
+  const cmsContentSimpl = new pkijs.ContentInfo();
+  cmsContentSimpl.contentType = "1.2.840.113549.1.7.3";
+  cmsContentSimpl.content = cmsEnveloped.toSchema();
 
-    const schema = cmsContentSimpl.toSchema();
-    const ber = schema.toBER(false);
+  const schema = cmsContentSimpl.toSchema();
+  const ber = schema.toBER(false);
 
-    // Insert enveloped data into new Mime message
-    var mimeBuilder = new MimeNode("application/pkcs7-mime; name=smime.p7m; smime-type=enveloped-data; charset=binary")
-    mimeBuilder
-        .setHeader("content-description", "Enveloped Data")
-        .setHeader("content-disposition", "attachment; filename=smime.p7m")
-        .setHeader("content-transfer-encoding", "base64")
-        .setContent(new Uint8Array(ber));
-    mimeBuilder.setHeader("from", "sender@example.com");
-    mimeBuilder.setHeader("to", "recipient@example.com");
-    mimeBuilder.setHeader("subject", "Example S/MIME encrypted message");
-    return mimeBuilder.build();
-  } catch(error) {
-    console.error(error);
-  }
+  // Insert enveloped data into new Mime message
+  const mimeBuilder = new MimeNode(
+      "application/pkcs7-mime; name=smime.p7m; smime-type=enveloped-data; charset=binary"
+  )
+      .setHeader("content-description", "Enveloped Data")
+      .setHeader("content-disposition", "attachment; filename=smime.p7m")
+      .setHeader("content-transfer-encoding", "base64")
+      .setContent(new Uint8Array(ber));
+  mimeBuilder.setHeader("from", "sender@example.com");
+  mimeBuilder.setHeader("to", "recipient@example.com");
+  mimeBuilder.setHeader("subject", "Example S/MIME encrypted message");
+
+  return mimeBuilder.build();
 }
+
 /**
  * Adapted from PKI.js' SMIMEEncryptionExample
  * @returns {string} decrypted string
@@ -105,48 +204,51 @@ export async function smimeEncrypt(
  * @param {string} privateKeyPem user's private key to decrypt with in PEM format
  * @param {string} certificatePem user's public certificate to decrypt with in PEM format
  */
-export async function smimeDecrypt(text: string, privateKeyPem: string, certificatePem: string): Promise<string> {
+export async function smimeDecrypt(
+  text: string,
+  privateKeyPem: string,
+  certificatePem: string
+): Promise<string> {
   // Decode input certificate
-  let asn1 = asn1js.fromBER(decodePem(certificatePem)[0]);
+  let asn1 = asn1js.fromBER(PemConverter.decode(certificatePem)[0]);
   const certSimpl = new pkijs.Certificate({ schema: asn1.result });
 
   // Decode input private key
-  const privateKeyBuffer = decodePem(privateKeyPem)[0];
+  const privateKeyBuffer = PemConverter.decode(privateKeyPem)[0];
 
   // Parse S/MIME message to get CMS enveloped content
+  // eslint-disable-next-line no-useless-catch
   try {
-    const parser:any = smimeParse(text);
+      const parser = smimeParse(text);
 
-    // Make all CMS data
-    asn1 = asn1js.fromBER(parser.content.buffer);
-    if (asn1.offset === -1) {
-      alert('Unable to parse your data. Please check you have "Content-Type: charset=binary" in your S/MIME message');
-      return;
-    }
+      // Make all CMS data
+      asn1 = asn1js.fromBER(parser.content.buffer);
+      if (asn1.offset === -1) {
+          console.error(
+              'Unable to parse your data. Please check you have "Content-Type: charset=binary" in your S/MIME message'
+          );
+          throw new Error(
+              'Unable to parse your data. Please check you have "Content-Type: charset=binary" in your S/MIME message'
+          );
+      }
 
-    const cmsContentSimpl = new pkijs.ContentInfo({ schema: asn1.result });
-    const cmsEnvelopedSimpl = new pkijs.EnvelopedData({ schema: cmsContentSimpl.content });
+      const cmsContentSimpl = new pkijs.ContentInfo({ schema: asn1.result });
+      const cmsEnvelopedSimpl = new pkijs.EnvelopedData({
+          schema: cmsContentSimpl.content,
+      });
 
-    const message = await cmsEnvelopedSimpl.decrypt(0, {
-      recipientCertificate: certSimpl,
-      recipientPrivateKey: privateKeyBuffer,
-    });
+      const message = await cmsEnvelopedSimpl.decrypt(0, {
+          recipientCertificate: certSimpl,
+          recipientPrivateKey: privateKeyBuffer,
+      });
 
-    return Convert.ToUtf8String(message);
+      return Convert.ToUtf8String(message);
   } catch (err) {
-    // Not an S/MIME message
-    throw err;
+      // Not an S/MIME message
+      throw err;
   }
 }
-
-/**
- * Adapted from PKI.js' CMSSignedComplexExample
- * @returns {String} signed string
- * @param {String} text string to sign
- * @param {String} privateKeyPem user's private key to sign with in PEM format
- * @param {String} certificatePem user's public cert to sign with in PEM format
- */
- export async function smimeSign(
+export async function smimeSign(
   text: string,
   privateKeyPem: string,
   certificatePem: string,
@@ -156,156 +258,227 @@ export async function smimeDecrypt(text: string, privateKeyPem: string, certific
   addExt = false,
   detachedSignature = true
 ): Promise<string> {
-  const alg = {
-    name: signAlgo,
-    hash: hashAlgo,
-    publicExponent: new Uint8Array([1, 0, 1]),
-    modulusLength: modulusLength,
-  };
+  // create PKCS#7 signed data with authenticatedAttributes
+  // attributes include: PKCS#9 content-type, message-digest, and signing-time
+  const p7 = forge.pkcs7.createSignedData();
 
-  // Decode input certificate
-  const asn1 = asn1js.fromBER(decodePem(certificatePem)[0]);
-  const certSimpl = new pkijs.Certificate({ schema: asn1.result });
+  // set content
+  // make sure to sign the headers as well
+  const headersWithText = `Content-Type: text/plain\nContent-Transfer-Encoding: 7bit\n\n${text}`;
+  p7.content = forge.util.createBuffer(headersWithText, "utf8");
 
-  // Import key
-  const pkcs8 = decodePem(privateKeyPem)[0];
-  const key = await crypto.subtle.importKey("pkcs8", pkcs8, alg, false, ["sign"]);
-
-  const cmsSigned = new pkijs.SignedData({
-    version: 1,
-    encapContentInfo: new pkijs.EncapsulatedContentInfo({
-      eContentType: "1.2.840.113549.1.7.1", // "data" content type
-      eContent: new asn1js.OctetString({ valueHex: Convert.FromUtf8String(text) }),
-    }),
-    signerInfos: [
-      new pkijs.SignerInfo({
-        version: 1,
-        sid: new pkijs.IssuerAndSerialNumber({
-          issuer: certSimpl.issuer,
-          serialNumber: certSimpl.serialNumber,
-        }),
-      }),
-    ],
-    certificates: [certSimpl],
+  // add signer
+  p7.addCertificate(certificatePem);
+  p7.addSigner({
+      key: privateKeyPem,
+      certificate: certificatePem,
+      digestAlgorithm: forge.pki.oids.sha256,
+      authenticatedAttributes: [
+          {
+              type: forge.pki.oids.contentType,
+              value: forge.pki.oids.data,
+          },
+          {
+              type: forge.pki.oids.messageDigest,
+              // value will be auto-populated at signing time
+          },
+          {
+              type: forge.pki.oids.signingTime,
+              // value can also be auto-populated at signing time
+              value: new Date().toString(),
+          },
+      ],
   });
 
-  await cmsSigned.sign(key, 0, hashAlgo);
+  // sign
+  p7.sign({ detached: false });
+  let pem = forge.pkcs7.messageToPem(p7);
+  pem = pem.replace(/-----BEGIN PKCS7-----\r?\n?/, "");
+  pem = pem.replace(/-----END PKCS7-----\r?\n?/, "");
 
-  const cmsContentSimpl = new pkijs.ContentInfo();
-  cmsContentSimpl.contentType = "1.2.840.113549.1.7.2";
-  cmsContentSimpl.content = cmsSigned.toSchema();
+  const binaryPem = Buffer.from(pem, "base64");
 
-  const schema = cmsContentSimpl.toSchema();
-  const ber = schema.toBER(false);
-
-  // Insert enveloped data into new Mime message
-  const mimeBuilder = new MimeNode("application/pkcs7-mime; name=smime.p7m; smime-type=signed-data;")
-    .setHeader("content-description", "Signed Data")
-    .setHeader("content-disposition", "attachment; filename=smime.p7m")
-    .setHeader("content-transfer-encoding", "base64")
-    .setContent(new Uint8Array(ber));
+  // Create new multipart/signed Mime message
+  const mimeBuilder = new MimeNode(
+      'multipart/signed; protocol="application/pkcs7-signature"; micalg=sha-256; name=smime.p7m; boundary="----------"'
+  );
+  // TODO: make variables
   mimeBuilder.setHeader("from", "sender@example.com");
   mimeBuilder.setHeader("to", "recipient@example.com");
   mimeBuilder.setHeader("subject", "Example S/MIME signed message");
 
-  return mimeBuilder.build();
-}
+  const plainText = new MimeNode("text/plain").setContent(text);
 
-export async function smimeSign2(
-  text,
-  privateKeyPem,
-  certificatePem,
-  signAlgo = "RSASSA-PKCS1-v1_5",
-  hashAlgo = "SHA-256",
-  modulusLength = 2048,
-  addExt = false,
-  detachedSignature = true
-) {
-  const alg = {
-    name: signAlgo,
-    hash: hashAlgo,
-    publicExponent: new Uint8Array([1, 0, 1]),
-    modulusLength: modulusLength,
-  };
+  const mimeSignature = new MimeNode(
+      "application/pkcs7-signature; name=smime.p7s; charset=binary"
+  )
+      .setHeader("content-description", "Signed Data")
+      .setHeader("content-disposition", "attachment; filename=smime.p7s")
+      .setHeader("content-transfer-encoding", "base64")
+      .setContent(binaryPem);
 
-  // Decode input certificate
-  const asn1 = asn1js.fromBER(decodePem(certificatePem)[0]);
-  const certSimpl = new pkijs.Certificate({ schema: asn1.result });
-
-  // Import key
-  const pkcs8 = decodePem(privateKeyPem)[0];
-  const key = await crypto.subtle.importKey("pkcs8", pkcs8, alg, false, ["sign"]);
-
-  const cmsSigned = new pkijs.SignedData({
-    version: 1,
-    encapContentInfo: new pkijs.EncapsulatedContentInfo({
-      eContentType: "1.2.840.113549.1.7.1", // "data" content type
-      eContent: new asn1js.OctetString({ valueHex: Convert.FromUtf8String(text) }),
-    }),
-    signerInfos: [
-      new pkijs.SignerInfo({
-        version: 1,
-        sid: new pkijs.IssuerAndSerialNumber({
-          issuer: certSimpl.issuer,
-          serialNumber: certSimpl.serialNumber,
-        }),
-      }),
-    ],
-    certificates: [certSimpl],
-  });
-
-  await cmsSigned.sign(key, 0, hashAlgo);
-
-  const cmsContentSimpl = new pkijs.ContentInfo();
-  cmsContentSimpl.contentType = "1.2.840.113549.1.7.2";
-  cmsContentSimpl.content = cmsSigned.toSchema();
-
-  const schema = cmsContentSimpl.toSchema();
-  const ber = schema.toBER(false);
-
-  // Insert enveloped data into new Mime message
-  const mimeBuilder = new MimeNode("application/pkcs7-mime; name=smime.p7m; smime-type=signed-data;")
-    .setHeader("content-description", "Signed Data")
-    .setHeader("content-disposition", "attachment; filename=smime.p7m")
-    .setHeader("content-transfer-encoding", "base64")
-    .setContent(new Uint8Array(ber));
-  mimeBuilder.setHeader("from", "sender@example.com");
-  mimeBuilder.setHeader("to", "recipient@example.com");
-  mimeBuilder.setHeader("subject", "Example S/MIME signed message");
+  mimeBuilder.appendChild(plainText);
+  mimeBuilder.appendChild(mimeSignature);
 
   return mimeBuilder.build();
 }
+/**
+ * Get an SMIMEA record for a corresponding email address if it exists
+ * @param {String} emailAddress email address to get SMIMEA record for
+ */
+ export async function DNSGetSMIMEA(
+  emailAddress: string
+): Promise<DTypes.CloudflareSMIMEARecord> {
+  // Cloudflare DNS-over-HTTPS service
+  const DNSServer = "https://cloudflare-dns.com/dns-query";
 
-export async function smimeVerify(smime: string, certificatePem: string) {
-  // Parse S/MIME message to get CMS enveloped content
-  const parser = smimeParse(smime);
+  const localPart = emailAddress.split("@")[0];
+  const domain = emailAddress.split("@")[1];
 
-  // Make all CMS data
-  let asn1 = asn1js.fromBER(parser.content.buffer);
-  if (asn1.offset === -1) {
-    alert('Unable to parse your data. Please check you have "Content-Type: charset=binary" in your S/MIME message');
-    return;
+  if (!localPart || !domain) {
+      // TODO: error
+      return;
   }
 
-  const cmsContentSimpl = new pkijs.ContentInfo({ schema: asn1.result });
-  const cmsSignedSimpl = new pkijs.SignedData({ schema: cmsContentSimpl.content });
+  // hash2-256
+  const hashedLocalPart = await sha256(localPart);
+  // truncate to 28 octets (Javascript characters are 2 bytes each)
+  const LHS = hashedLocalPart.substring(0, 28 * 2);
+
+  const SMIMEAQueryLocation = `${LHS}._smimecert.${domain}`;
+
+  const queryURL = new URL(DNSServer);
+  queryURL.searchParams.set("name", SMIMEAQueryLocation);
+  queryURL.searchParams.set("type", "SMIMEA");
+
+  // Make our request to Cloudflare
+  return await fetch(queryURL.href, {
+      headers: {
+          Accept: "application/dns-json",
+      },
+  })
+      .then(async (res) => {
+          console.dir(JSON.stringify(res));
+          const json = await res.json();
+          console.dir(JSON.stringify(json));
+          return json;
+      })
+      .catch((err) => {
+          return null;
+      });
+}
+export async function smimeVerify(smime: string, certificatePem: string) {
+  let parser;
+  try {
+      // Parse S/MIME message to get CMS signed content
+      parser = smimeParse(smime);
+  } catch (err) {
+      console.error("Unable to parse your data.");
+      return;
+  }
+
+  if (!parser.childNodes || parser.childNodes.length !== 2) {
+      // non-multipart S/MIME
+      console.error("No child nodes!");
+      return;
+  }
+
+  let asn1;
+
+  // detached signature, check signature child node
+  const lastNode = parser.childNodes[1];
+  if (
+      lastNode.contentType.value === "application/pkcs7-signature" ||
+      lastNode.contentType.value === "application/x-pkcs7-signature"
+  ) {
+      asn1 = asn1js.fromBER(lastNode.content.buffer);
+      if (asn1.offset === -1) {
+          console.error(
+              'Unable to parse your data. Please check you have "Content-Type: charset=binary" in your S/MIME message'
+          );
+          return;
+      }
+  } else {
+      throw new Error("Unsupported signing format");
+  }
+
+  if (!asn1) return;
+
+  let cmsContentSimpl;
+  let cmsSignedSimpl;
+  try {
+      cmsContentSimpl = new pkijs.ContentInfo({ schema: asn1.result });
+      cmsSignedSimpl = new pkijs.SignedData({
+          schema: cmsContentSimpl.content,
+      });
+  } catch (err) {
+      console.error("Incorrect message format!");
+      return;
+  }
 
   // Decode input certificate
   asn1 = asn1js.fromBER(PemConverter.decode(certificatePem)[0]);
   const certSimpl = new pkijs.Certificate({ schema: asn1.result });
 
   // push certificate we got from DANE before verifying
-  cmsSignedSimpl.certificates.push(certSimpl);
+
+  const signedDataBuffer = stringToArrayBuffer(
+      parser.childNodes[0].raw.replace(/\n/g, "\r\n")
+  );
 
   const verificationParameters = {
-    signer: 0,
-    checkChain: false,
-    extendedMode: true,
+      signer: 0,
+      data: signedDataBuffer,
+      trustedCerts: [certSimpl],
+      checkChain: false,
+      extendedMode: true,
   };
 
   return cmsSignedSimpl.verify(verificationParameters);
 }
+/**
+ * Convert an S/MIMEA record from Cloudflare to a usable S/MIMEA record interface
+ * @returns {ArrayBuffer}
+ * @param {String} hexString space separated hex string to convert (eg. AA BB CC DD)
+ */
+export function CloudflareSMIMEARecordToSMIMEARecord(
+    hexString: string
+): DTypes.SMIMEARecord {
+    // ignore \# 730 at the start
+    hexString = hexString.substring(7);
 
+    const SMIMEARecord = {} as DTypes.SMIMEARecord;
+    SMIMEARecord.certUsage = Number(hexString.substring(0, 2));
+    SMIMEARecord.selector = Number(hexString.substring(3, 5));
+    SMIMEARecord.matchingType = Number(hexString.substring(6, 8));
+
+    const binaryCertificateString = hexString.substring(8);
+    const typedArray = new Uint8Array(
+        binaryCertificateString.match(/[\da-f]{2}/gi).map(function (h) {
+            return parseInt(h, 16);
+        })
+    );
+    SMIMEARecord.binaryCertificate = typedArray.buffer;
+
+    return SMIMEARecord;
+}
+
+async function sha256(text: string): Promise<string> {
+  // UTF-8 encode
+  const msgBuffer = new TextEncoder().encode(text);
+
+  // hash text
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+
+  // convert from ArrayBuffer to Array
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+  // convert bytes to hex string
+  const hashHex = hashArray
+      .map((b) => ("00" + b.toString(16)).slice(-2))
+      .join("");
+  return hashHex;
+}
 
 /* ====================================================================================
     START of "MimeNode" class, based on "emailjs-mime-builder":
