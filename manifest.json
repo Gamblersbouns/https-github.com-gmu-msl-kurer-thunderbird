@@ -14,11 +14,6 @@
     "background": {
         "scripts": ["scripts/background_bundled.js"]
     },
-    "browser_action": {
-        "default_popup": "browser_popup.html",
-        "default_title": "Kurer",
-        "default_icon": "images/icon-32.png"
-    },
     "options_ui": {
         "page": "options.html",
         "open_in_tab": false,
