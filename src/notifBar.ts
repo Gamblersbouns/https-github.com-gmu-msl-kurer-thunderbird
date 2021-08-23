@@ -3,12 +3,11 @@
 
 /** Communication port with background script */
 var port = browser.runtime.connect()
-var notifBar: HTMLDivElement = null
 
 log("loaded Message Display Content Script!")
 
 function initNotifBar(text: string[]) {
-    notifBar = document.createElement("div");
+    const notifBar = document.createElement("div");
     notifBar.classList.add("nBarOuter","nBarAnimIn")
     const notifLogo = document.createElement("div");
     notifLogo.classList.add("nBarLogo")
@@ -23,14 +22,10 @@ function initNotifBar(text: string[]) {
 }
 /** Shows the passed notification html in the notification bar */
 function showNotif(notif:string[]) {
-    // if (notifBar) {
-    //     notifBar.remove()
-    //     notifBar = null; notifText = null
-    // }
-
-
-    if (!notifBar) initNotifBar(notif)
+    let foundExistingBar = document.firstElementChild.querySelector("div.nBarOuter")
+    if (!foundExistingBar) initNotifBar(notif)
     else {
+        let notifBar = foundExistingBar as HTMLDivElement 
         Array.from(notifBar.getElementsByClassName("nBarStatus"))
         .forEach(t=>t.remove())
         notif.forEach(t=>{
@@ -53,7 +48,13 @@ browser.runtime.onMessage.addListener((msg:Message)=>{
     if (msg.color) notif.forEach((v,i,a)=>{
         a[i] = `<span class="color-${msg.color}">${v}</span>`
     })
-    showNotif(notif)
+    if (msg.delay) {
+        window.setTimeout(()=>{showNotif(notif)},msg.delay)
+    }
+    else {
+        showNotif(notif)
+    }
+    
 })
 
 /** Transmit console log to background script */
