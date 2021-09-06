@@ -69,10 +69,7 @@ declare namespace messenger.compose {
 
     /** on before send event
     */
-    const onBeforeSend: EvListener<(tab:browser.tabs.Tab,details:ComposeDetails)=>{cancel:boolean,details:ComposeDetails}>
-
-
-    function addListener(listener:(tab:browser.tabs.Tab,details:ComposeDetails)=>{cancel:boolean,details:ComposeDetails})
+    const onBeforeSend: EvListener<(tab:browser.tabs.Tab,details:ComposeDetails)=>{cancel:boolean,details:ComposeDetails} | Promise<any> >
 
 }
 
