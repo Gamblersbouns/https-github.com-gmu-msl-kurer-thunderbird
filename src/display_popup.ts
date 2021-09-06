@@ -11,13 +11,15 @@ window.addEventListener('load',()=>{
     subtitle = <HTMLDivElement> document.getElementById("text-subtitle1")
 
     port = browser.runtime.connect()
-    let msg: Message = {type: "getOptions"}
-    port.postMessage(msg)
+    
     port.onMessage.addListener((msg:Message)=>{
         if (msg.type == "sendOptions")
         optionsUpdate(msg.payload)
         console.log("displayPopup updated options")
+        console.dir(options)
     })
+    let msg: Message = {type: "getOptions"}
+    port.postMessage(msg)
 })
 
 // @ts-ignore

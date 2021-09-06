@@ -11,13 +11,16 @@ window.addEventListener('load',()=>{
     subtitle = <HTMLDivElement> document.getElementById("text-subtitle1")
 
     port = browser.runtime.connect()
+    
+    port.onMessage.addListener((msg:Message)=>{
+        if (msg.type == "sendOptions") {
+            console.dir(msg)
+            optionsUpdate(msg.payload)
+            console.log("composePopup updated options")
+        }
+    })
     let msg: Message = {type: "getOptions"}
     port.postMessage(msg)
-    port.onMessage.addListener((msg:Message)=>{
-        if (msg.type == "sendOptions")
-        optionsUpdate(msg.payload)
-        console.log("composePopup updated options")
-    })
     mainButton.addEventListener("click",()=>{onClickEncrypt()})
 })
 
