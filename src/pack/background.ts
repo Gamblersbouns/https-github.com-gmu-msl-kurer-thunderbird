@@ -20,6 +20,7 @@ browser.runtime.onConnect.addListener(port=>{
                 type: "sendOptions",
                 payload: options
             } 
+            console.dir(msg)
             port.postMessage(msg)
         } 
         else if (msg.type=="log") console.log(msg.payload)
@@ -37,6 +38,7 @@ const defaultOptions: Options = {
 async function fetchOptionsOnStartup() {
     options = await browser.storage.local.get("options")
     if (!options) await browser.storage.local.set(defaultOptions)
+    options = defaultOptions
     console.log("background got options first time")
 }
 
@@ -60,7 +62,8 @@ async function registerScripts() {
 // update running copy of options if it is changed
 browser.storage.onChanged.addListener(changes=>{
     if (!changes.options) return // if options were unchanged, don't care
-    Object.assign(options,changes.options.newValue)
+    console.dir(options.options, changes.options.newValue)
+    Object.assign(options.options,changes.options.newValue)
     console.log("background updated options")
     console.dir(options)
     // communicate the changes in options
@@ -123,16 +126,21 @@ browser.runtime.onMessage.addListener((data: Message)=>{
     }
 })
 /** Clean up the message before sending (remove any possible notification bars) */
-messenger.compose.onBeforeSend.addListener( (tab,dets)=> {
-    let newBody = null
+messenger.compose.onBeforeSend.addListener( (tab,dets) => {
+    let newBody = stripNotificationBar(dets.body)
     if (options.options.autoEncrypt) {
         console.log("auto encrypting!")
-        encrypt(tab.id).then(()=>{
-            return {cancel: false}
+        return encrypt(tab.id).then((newDets)=>{
+            if (!newDets) {
+                console.error("Failed encryption, halting send")
+                let cancel = options.options.warningUnsecure // cancel send if the warning option is set
+                return {cancel: cancel, details: {body:newBody}}
+            }
+            return {cancel: false, details: newDets}
         })
     }
     else {
-        newBody = stripNotificationBar(dets.body)
+        
         return {cancel: false, details: {body: newBody}}
     }
 })
@@ -213,7 +221,7 @@ async function encrypt(tabId:number): Promise<string> {
             browser.tabs.sendMessage(tabId,{type:"notif",payload:["Certificate found, encrypting..."]})
         }
         else {
-            let answer = JSON.stringify(cfSMIMEA.Answer)
+            let answer = JSON.stringify(cfSMIMEA.Answer,null,2)
             browser.tabs.sendMessage(tabId,{type:"notif",payload:["Target record not found...","Other",`<pre style="font-size:xxx-small">${answer}<pre>`]})
             return null
         }
