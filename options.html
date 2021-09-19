@@ -24,29 +24,7 @@
         </div>
 
         <form id="mainForm" style="margin-bottom:0px;">
-          <div class="hl-border-strong">
-            <h6>Private key for signing and decrypting</h6>
-            <textarea class="browser-style centered pem-input" id="privateKey" placeholder="[Paste PEM text]"></textarea>
-          </div>
-
-          <div class="hl-border-strong"  style="margin-top:20px;">
-            <h6>Cache of known public keys</h6>
-            For <b>debug</b> purposes you can modify a single entry
-            <div id="cacheOptions" class="browser-style hl-border-weak">
-                <label>email address</label>
-                <input class="centered" type="text" id="1_cacheName" placeholder="email"/>
-                <label>PEM certificate text</label>
-                <textarea class="browser-style centered pem-input" id="1_cacheCert" placeholder="[Undefined]"></textarea>
-            </div>
-          </div>
-
-          <div class="hl-border-strong"  style="margin-top:20px;">
-            <h6>Reading message</h6>
-            <div class="switchBox">
-              <div>Only manually decrypt</div>
-              <label class="switch"><input id="opt_autoDecrypt" type="checkbox" /><div></div></label>
-              <div>Auto-decrypt detected on read</div>
-            </div>
+          <div class="hl-border-strong"  style="margin-top:20px;" hidden>
           </div>
 
           <div class="hl-border-strong"  style="margin-top:20px;">
@@ -69,6 +47,33 @@
               <div>Show warning popup</div>
             </div>
           </div>
+
+          <div class="hl-border-strong" style="margin-top:20px;">
+            <h6>Private key for signing and decrypting</h6>
+            <textarea class="browser-style centered pem-input" id="privateKey" placeholder="[Paste PEM text]"></textarea>
+          </div>
+          <div class="hl-border-strong" style="margin-top:20px;">
+            <h6>Your email address used when signing</h6>
+            <span style="font-size: x-small;">Should match your "From" address chosen when composing mail</span>
+            <input type="email" class="browser-style centered pem-input" id="email" placeholder="john.doe@example.com"></textarea>
+          </div>
+          <div class="hl-border-strong" style="margin-top:20px;">
+            <h6>Certificate sent with signatures</h6>
+            <span style="font-size: x-small;">Leave empty to pull from DANE</span>
+            <textarea class="browser-style centered pem-input" id="cert" placeholder="[Paste PEM text]"></textarea>
+          </div>
+          
+          <div class="hl-border-strong"  style="margin-top:20px;" hidden>
+            <h6>Cache of known public keys</h6>
+            For <b>debug</b> purposes you can modify a single entry
+            <div id="cacheOptions" class="browser-style hl-border-weak">
+                <label>email address</label>
+                <input class="centered" type="text" id="1_cacheName" placeholder="email"/>
+                <label>PEM certificate text</label>
+                <textarea class="browser-style centered pem-input" id="1_cacheCert" placeholder="[Undefined]"></textarea>
+            </div>
+          </div>
+
           <!-- Save button -->
           <div style="margin-top: 15px; display: flex; justify-content: space-between;" >
             <button class="browser-style" type="submit">Save</button>

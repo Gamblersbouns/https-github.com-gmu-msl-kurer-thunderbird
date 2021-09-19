@@ -5,13 +5,16 @@ type Options = {
     options: {
         /** Unencrypted private key (temp. testing use) */
         privateKey?: string
+        /** User's email address when sending */
+        email?: string
+        /** Cert used when generating signiture */
+        cert?: string
         /** Array of cached name-cert associations */
         cache?: {
             name: string
             cert: string
         }[]
-        /** Toggle options for auto encrypt/decrypt/sign */
-        autoDecrypt?: boolean
+        /** Toggle options for auto encrypt/sign */
         autoEncrypt?: boolean
         warningUnsecure?: boolean
         autoSign?: boolean
@@ -22,7 +25,9 @@ type Message =
     {type: "getOptions"} |
     {type: "sendOptions", payload: Options} |
     {type: "encrypt", tabId?: number} |
+    {type: "sign"} |
     {type: "decrypt", ciphertext: string} |
     {type: "log", payload: any} |
     {type: "dir", payload: any} |
-    {type: "notif", payload: string[], color?: 'pos' | 'mid' | 'neg', delay?: number}
+    {type: "notif", payload: string[], color?: 'pos' | 'mid' | 'neg', delay?: number} |
+    {type: "replace", payload: string}
