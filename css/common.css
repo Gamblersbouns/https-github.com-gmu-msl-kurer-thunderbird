@@ -82,6 +82,7 @@ div.hl-border-weak {
 .switch input {
 position: absolute;
 opacity: 0;
+width: 0;
 }
 
 /**
@@ -91,6 +92,7 @@ div.switchBox { /* A div containing a switch and related text*/
     display: flex;
     justify-content: left;
     align-items: center;
+    
 }
 
 div.switchBox > div { 
@@ -125,6 +127,7 @@ div.switchBox > div:not(.checked) {
     width: 2em;
     background: #2d6edb;
     border-radius: 1em;
+    cursor: pointer;
 }
 
 .switch div {
