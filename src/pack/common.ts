@@ -206,11 +206,17 @@ pkijs.setEngine(
 ): Promise<string> {
   // Decode input private key
   const privateKeyBuffer = PemConverter.decode(privateKeyPem)[0];
-
+  let parser
   // Parse S/MIME message to get CMS enveloped content
   try {
-      const parser = smimeParse(text);
-
+      parser = smimeParse(text);
+    } catch (err) {
+      // Not an S/MIME message
+      console.error(err);
+      console.log(err.code,err.message,err.name)
+      console.log(text)
+      throw new Error("SmimeParseError");
+  }
       // Make all CMS data
       const asn1 = asn1js.fromBER(parser.content.buffer);
       if (asn1.offset === -1) {
@@ -223,17 +229,21 @@ pkijs.setEngine(
       const cmsEnvelopedSimpl = new pkijs.EnvelopedData({
           schema: cmsContentSimpl.content,
       });
-
-      const message = await cmsEnvelopedSimpl.decrypt(0, {
+      let message
+    try{
+      message = await cmsEnvelopedSimpl.decrypt(0, {
           recipientPrivateKey: privateKeyBuffer,
       });
-
-      return Convert.ToUtf8String(message);
-  } catch (err) {
+    } catch (err) {
       // Not an S/MIME message
       console.error(err);
-      throw new Error("Not a properly formatted S/MIME message");
+      console.log(err.code,err.message,err.name)
+      console.log(text)
+      throw new Error("SmimeDecryptError");
   }
+
+      return Convert.ToUtf8String(message);
+  
 }
 
 /**
