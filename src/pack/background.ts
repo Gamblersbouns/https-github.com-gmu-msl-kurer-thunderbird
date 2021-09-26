@@ -145,11 +145,25 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
             return null
         }
     }
+    console.log(msgPart)
+    // get cannonical sender's address
+    let sender = msgPart.headers.from[0] as string
+    if (!sender) return
+    if (sender.slice(-1)=='>') { // if the from header has angle brackets at the end, we extract email from within
+        let i = sender.lastIndexOf('<')
+        if (i!=-1) sender = sender.slice(i+1,-1)
+    }
+    console.log(`email from: '${sender}'`)
     // try and get html part
+    let htmlVersion = true
     let found = searchParts(msgPart, hHTML)
-    if (!found) return
+    if (!found) { // compatability if the message was sent with plaintext
+        found = searchParts(msgPart, hPlaintext)
+        htmlVersion = false
+    }
+    let body = htmlVersion? found.body: `<body><pre>${found.body}</pre></body>`
     // parse html email as DOM
-    let doc = new DOMParser().parseFromString(found.body,'text/html')
+    let doc = new DOMParser().parseFromString(body,'text/html')
     // attempt to find a pre block with encrypted or signed SMIME content
     let block = doc.querySelector("pre")
     if (
@@ -166,6 +180,8 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
     if (msg.id != currentlyViewedMessageId) return
     await browser.tabs.sendMessage(tab.id,{type:"notif",payload:["Decrypting and Verifying SMIME message"]})
     let time = performance.now()
+    
+    
     let decrypted: {success:boolean,msg}[] = [] , verified: {success:boolean,msg}[] = []
     while (true) {
         let block = doc.querySelector("pre")
@@ -177,7 +193,7 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
             continue
         }
         if (block.innerText.startsWith("Content-Type: multipart/signed")) {
-            verified.push(await verify(block, msg.author))
+            verified.push(await verify(block, sender))
             // if last decryption was not successful, do not process any further
             if (!verified[verified.length-1].success) break
             continue
@@ -264,7 +280,9 @@ async function verify(block:HTMLPreElement, sender:string): Promise<{success:boo
             success: verified,
             msg: [
                 verified?`<span class="color-pos">Signature Verified</span>`
-                :`<span class="color-neg">Signature Unverified</span>`
+                :`<span class="color-neg">Signature Unverified</span>`,
+                verified?`<span class="font-sub">From <i>${sender}</i></span>`
+                :`<span class="font-sub">Email does not match signiture!</span>`
             ]
         }
 
