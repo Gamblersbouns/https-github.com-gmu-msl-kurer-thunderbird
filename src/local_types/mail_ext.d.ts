@@ -121,7 +121,7 @@ declare namespace messenger.messages {
         body?: string
         contentType?: string
         /** A object with header name as key and an array of header values as value */
-        headers?: object
+        headers?: any
         /** name of the part, if it is a file    */
         name?: string
         partName?:string

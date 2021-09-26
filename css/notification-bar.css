@@ -29,8 +29,9 @@ div.nBarLogo {
 }
 
 .color-pos {color: #00e676}
-.color-neg {color: #ff5722}
+.color-neg {color: #ff5252}
 .color-mid {color: #eeff41}
+.font-sub {color: #78909c; font-size: 90%;}
 div.nBarStatus {
     margin-left: 8px;
     padding-left: 8px;

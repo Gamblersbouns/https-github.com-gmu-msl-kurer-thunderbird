@@ -41,18 +41,30 @@ function showNotif(notif:string[]) {
         
     }
 }
+/** Replace the html body with given html */
+async function replace(newBody:string, delay?:number) {
+    // wait for millis if necessary
+    if (delay) await new Promise(r => setTimeout(r, delay))
+    document.firstElementChild.querySelector("body").innerHTML = newBody
+}
 
 browser.runtime.onMessage.addListener((msg:Message)=>{
-    if (!msg.type || msg.type != "notif") return
-    let notif = msg.payload
-    if (msg.color) notif.forEach((v,i,a)=>{
-        a[i] = `<span class="color-${msg.color}">${v}</span>`
-    })
-    if (msg.delay) {
-        window.setTimeout(()=>{showNotif(notif)},msg.delay)
-    }
-    else {
-        showNotif(notif)
+    if (!msg.type) return
+    if (msg.type == "notif") {
+         let notif = msg.payload
+        if (msg.color) notif.forEach((v,i,a)=>{
+            a[i] = `<span class="color-${msg.color}">${v}</span>`
+        })
+        if (msg.delay) {
+            window.setTimeout(()=>{showNotif(notif)},msg.delay)
+        }
+        else {
+            showNotif(notif)
+        }
+    } else if (msg.type == "replace") {
+        replace(msg.payload, msg.delay)
+    } else if (msg.type == "ping") { // returns a "ping" to a "ping"
+        return Promise.resolve({response: "ping"})
     }
     
 })

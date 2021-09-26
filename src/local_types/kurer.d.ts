@@ -30,4 +30,5 @@ type Message =
     {type: "log", payload: any} |
     {type: "dir", payload: any} |
     {type: "notif", payload: string[], color?: 'pos' | 'mid' | 'neg', delay?: number} |
-    {type: "replace", payload: string}
+    {type: "replace", payload: string, delay?:number} |
+    {type: "ping"}
