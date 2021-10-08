@@ -12,9 +12,11 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/he": "^1.1.2",
     "@types/node": "^16.4.13",
     "@types/node-forge": "^0.10.3",
     "browserify": "^17.0.0",
+    "he": "^1.2.0",
     "mail-ext-types": "^0.1.0",
     "node-forge": "^0.10.0",
     "pvutils": "^1.0.17",
@@ -27,7 +29,6 @@
     "webpack-cli": "^4.7.2"
   },
   "dependencies": {
-    "@peculiar/webcrypto": "^1.1.7",
     "@peculiar/x509": "^1.3.2",
     "asn1js": "^2.1.1",
     "emailjs-mime-builder": "^2.0.5",
