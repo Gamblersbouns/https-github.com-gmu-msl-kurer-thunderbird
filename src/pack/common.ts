@@ -3,6 +3,7 @@
  */
 
 //const WebCrypto = require("@peculiar/webcrypto").Crypto // unneeded if we assume browser compat.
+import * as he from "he"
 import { Convert } from "pvtsutils"
 import {stringToArrayBuffer, arrayBufferToString} from "pvutils"
 //const MimeBuilder = require("emailjs-mime-builder") 
@@ -16,6 +17,8 @@ import { convertAddresses, parseAddresses, encodeHeaderValue, normalizeHeaderKey
 //import { PemConverter } from "@peculiar/x509"
 import * as DTypes from "../local_types/dane" 
 import * as forge from "node-forge"
+
+export const VERBOSE_LOGS = false
 
 /** Returns Base64 array from ascii PEM format */
 function decodePem(pem:string) {
@@ -118,6 +121,15 @@ class PemConverter {
       return `-----BEGIN ${upperCaseTag}-----\n${rows.join("\n")}\n-----END ${upperCaseTag}-----`;
   }
 }
+/** Returns string <'s and >'s etc encoded into html */
+export function htmlEncode(preHTML:string): string {
+  return he.encode(preHTML)
+}
+/** Returns decoded string from html */
+export function htmlDecode(html:string): string {
+  return he.decode(html)
+}
+
 
 export function PEMencode(a, b) {
   return PemConverter.encode(a,b)
@@ -212,9 +224,9 @@ pkijs.setEngine(
       parser = smimeParse(text);
     } catch (err) {
       // Not an S/MIME message
-      console.error(err);
-      console.log(err.code,err.message,err.name)
-      console.log(text)
+      if (VERBOSE_LOGS) console.error(err);
+      if (VERBOSE_LOGS) console.log(err.code,err.message,err.name)
+      if (VERBOSE_LOGS) console.log(text)
       throw new Error("SmimeParseError");
   }
       // Make all CMS data
@@ -236,14 +248,14 @@ pkijs.setEngine(
       });
     } catch (err) {
       // Not an S/MIME message
-      console.error(err);
-      console.log(err.code,err.message,err.name)
-      console.log(text)
+      if (VERBOSE_LOGS) console.error(err);
+      if (VERBOSE_LOGS) console.log(err.code,err.message,err.name)
+      if (VERBOSE_LOGS) console.log(text)
       throw new Error("SmimeDecryptError");
   }
-
-      return Convert.ToUtf8String(message);
-  
+      let toReturn = Convert.ToUtf8String(message);
+      if (VERBOSE_LOGS) console.log('SMIME-decrypt-output', JSON.stringify(toReturn))
+      return toReturn
 }
 
 /**
@@ -266,7 +278,7 @@ pkijs.setEngine(
 
   // set content
   p7.content = forge.util.createBuffer(text, "utf8");
-
+  if (VERBOSE_LOGS) console.log('SMIME-sign-input', JSON.stringify(text), privateKeyPem)
   // add signer
   p7.addCertificate(certificatePem);
   p7.addSigner({
@@ -325,8 +337,9 @@ pkijs.setEngine(
 
   mimeBuilder.appendChild(plainText);
   mimeBuilder.appendChild(mimeSignature);
-    let x = mimeBuilder.build()
-  return x
+    let signedMimeNodes = mimeBuilder.build()
+  if (VERBOSE_LOGS) console.log('SMIME-sign-output', JSON.stringify(signedMimeNodes))
+  return signedMimeNodes
   
 }
 /**
@@ -365,17 +378,18 @@ pkijs.setEngine(
       },
   })
       .then(async (res) => {
-          console.dir(JSON.stringify(res));
+          //if (VERBOSE_LOGS) console.dir(JSON.stringify(res));
           const json = await res.json();
-          console.dir(JSON.stringify(json));
+          //if (VERBOSE_LOGS) console.dir(JSON.stringify(json));
           return json;
       })
       .catch((err) => {
           return null;
       });
 }
-export async function smimeVerify(smime: string, certificatePem: string) {
+export async function smimeVerify(smime: string, certificatePem: string): Promise<{signatureVerified: boolean}> {
   let parser;
+  if (VERBOSE_LOGS) console.log('SMIME-verify', JSON.stringify(smime), certificatePem)
   try {
       // Parse S/MIME message to get CMS signed content
       parser = smimeParse(smime);
@@ -433,8 +447,10 @@ export async function smimeVerify(smime: string, certificatePem: string) {
       data: signedDataBuffer,
       extendedMode: true,
   };
-
-  return cmsSignedSimpl.verify(verificationParameters);
+  let toReturn = await cmsSignedSimpl.verify(verificationParameters);
+  if (VERBOSE_LOGS) console.dir(toReturn)
+  return toReturn
+  
 }
 
 
@@ -456,7 +472,10 @@ export async function smimeGetSignatureBody(smime: string): Promise<string> {
   // detached signature, check first child node for body
   const bodyNode = parser.childNodes[0];
   if (bodyNode.contentType.value === "text/plain") {
-      return arrayBufferToString(bodyNode.content.buffer);
+    let toReturn = arrayBufferToString(bodyNode.content.buffer);
+    toReturn = decodeURIComponent(escape(toReturn)) // we must decode utf-8 bytes to get unicode string 
+    if (VERBOSE_LOGS) console.log('result of smimeGetSignatureBody\n',JSON.stringify(toReturn))
+    return toReturn
   } else {
       throw new Error(
           `Unsupported body type: ${bodyNode.contentType.value} is not "text/plain"`
