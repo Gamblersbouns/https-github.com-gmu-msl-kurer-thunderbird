@@ -104,7 +104,7 @@ function toggleSwitchAnim() {
  */
 function showStatus(newStatus:string) {
     let statusBar = document.getElementById('statusbar')
-    let statusText = <HTMLDivElement>statusBar.firstElementChild
+    let statusText = <HTMLDivElement>document.getElementById('statustext')
     statusText.innerHTML = newStatus
     statusText.classList.remove('text-focus')
     void statusText.offsetWidth; // hack to refresh element visually
