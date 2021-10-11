@@ -30,21 +30,21 @@
           <div class="hl-border-strong"  style="margin-top:20px;">
             <h6>Composing messages</h6>
             <div class="switchBox">
-              <div>Only manually encrypt</div>
+              <div>Seperate encrypt button</div>
               <label class="switch"><input id="opt_autoEncrypt" type="checkbox" /><div></div></label>
-              <div>Auto-encrypt on send</div>
+              <div>Always encrypt on send</div>
             </div>
             <div class="switchBox">
-              <div>Only manually sign</div>
+              <div>Not signed by default</div>
               <label class="switch"><input id="opt_autoSign" type="checkbox" /><div></div></label>
-              <div>Auto-sign on send</div>
+              <div>Signed by default</div>
             </div>
             <br>
-            If no valid certificate found for recipient over DANE:
+            If unable to encrypt for a recipient:
             <div class="switchBox">
-              <div>Send unencrypted silently</div>
+              <div>Silently send unencrypted</div>
               <label class="switch"><input id="opt_sendWarning" type="checkbox" /><div></div></label>
-              <div>Show warning popup</div>
+              <div>Halt and show warning</div>
             </div>
           </div>
 
@@ -57,7 +57,7 @@
             <span style="font-size: x-small;">Should match your "From" address chosen when composing mail</span>
             <input type="email" class="browser-style centered pem-input" id="email" placeholder="john.doe@example.com"></textarea>
           </div>
-          <div class="hl-border-strong" style="margin-top:20px;">
+          <div class="hl-border-strong" style="margin-top:20px;" hidden>
             <h6>Certificate sent with signatures</h6>
             <span style="font-size: x-small;">Leave empty to pull from DANE</span>
             <textarea class="browser-style centered pem-input" id="cert" placeholder="[Paste PEM text]"></textarea>
@@ -87,7 +87,7 @@
 
     <div style="display:flex; align-items: center; padding:10px; font-size:smaller; background-color:rgba(55,55,65,.5);">
         <div id="statusbar" style="padding-left:8px; border-left: 2px solid #98cee8; min-height: 20px;">
-          <div>Status</div>
+          <div id="statustext">Status</div>
         </div>
     </div>
     <script src="scripts/options.js"></script>
