@@ -26,22 +26,48 @@ browser.runtime.onConnect.addListener(port=>{
         }
         else if (msg.type=="dir") {
             if (Common.VERBOSE_LOGS) console.dir(msg.payload)
-        } 
+        } else if (msg.type=='get') { // handle get-type messages
+            if (msg.query=="composeSign") {
+                composeGetSigned( msg.tabId )
+                .then( signed => { port.postMessage({ type:'reply', query:'composeSign', signed:signed } as Message) })  
+            } else if (msg.query=="composeTabId") {
+                browser.windows.getAll({ populate:true })
+                .then(w=>{ 
+                    let tab = w.find(w=>w.type=="messageCompose"as string&&w.focused).tabs[0] 
+                    if (tab) { port.postMessage({ type:'reply', query:'composeTabId', tabId:tab.id} as Message) }
+                })
+            } 
+        } else if (msg.type=="action") { // handle action-type messages
+            console.dir(msg)
+            if (msg.action=="composeSetSigned") { // simply modify the signed badge to the correct state
+                messenger.composeAction.setBadgeBackgroundColor({
+                    color: msg.signed ? COLOR_SIGN : COLOR_NOT_SIGN,
+                    tabId: msg.tabId
+                })
+            } else if (msg.action=="composeSendEncrypt") { // send the message encrypted
+                encryptFlag = true
+                messenger.compose.sendMessage(msg.tabId, {mode:"sendNow"})
+                .catch(e=>{console.error(e)})
+            }
+        }
     })
     port.onDisconnect.addListener(p=> ports = ports.filter(item => item !== p) )
 })
 
 const defaultOptions: Options = {
     options: {
-        autoEncrypt:true, autoSign:true, warningUnsecure:true
+        autoEncrypt:false, autoSign:true, warningUnsecure:true
     }
 }
 
 async function fetchOptionsOnStartup() {
     options = await browser.storage.local.get("options")
-    if (!options) await browser.storage.local.set(defaultOptions)
-    options = defaultOptions
+    if (!options) {
+        await browser.storage.local.set(defaultOptions)
+        options = defaultOptions
+    }
     if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("background got options first time")
+    initSignBadge()
 }
 
 document.addEventListener("DOMContentLoaded",registerScripts)
@@ -61,7 +87,13 @@ async function registerScripts() {
     } catch (e) {if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.error(e)}
 }
 
-
+/** Returns true if the compose tab given by id is set to be signed  */
+async function composeGetSigned(tabId:number): Promise<boolean> {
+    let color = await messenger.composeAction.getBadgeBackgroundColor({ tabId: tabId })
+    let toRet = color && rgbToHex(color).toLocaleLowerCase()==COLOR_SIGN
+    if (Common.VERBOSE_LOGS) console.log("COMPOSE GET SIGNED FOR TAB "+tabId+" is "+toRet)
+    return toRet
+}
 // update running copy of options if it is changed
 browser.storage.onChanged.addListener(changes=>{
     if (!changes.options) return // if options were unchanged, don't care
@@ -75,9 +107,29 @@ browser.storage.onChanged.addListener(changes=>{
         }
         port.postMessage(msg)
     })
+    // reinitialize the compose action with new options
+    initSignBadge()
     
 })
-
+/** Converts rgba.. array to rgb hex string */
+function rgbToHex(c: number[]) {
+    let toHex = (n:number)=>{let h=n.toString(16); return h.length==1 ? "0"+h : h}
+    return '#' + toHex(c[0]) + toHex(c[1]) + toHex(c[2]) 
+}
+/** Badge color when sign is disabled */
+const COLOR_NOT_SIGN = "#b71c1c"
+/** Badge color when sign is enabled */
+const COLOR_SIGN = "#2e7d32"
+const SIGN_TEXT = "SIG"
+/** Sets the compose action badge globally acording to onSign option */
+function initSignBadge() {
+    if (Common.VERBOSE_LOGS) console.log("INIT SIGN BADGE")
+    if (options && options.options && options.options.autoSign) {
+        let sign = options.options.autoSign
+        messenger.composeAction.setBadgeBackgroundColor({ color: sign?COLOR_SIGN:COLOR_NOT_SIGN })
+        messenger.composeAction.setBadgeText({ text: SIGN_TEXT })
+    }
+}
 /** Strips the extra html created by our notification bar logic to return the original body and returns the html content of the document body */
 function stripNotificationBar(body:string): string {
     let doc = new DOMParser().parseFromString(body,'text/html')
@@ -85,7 +137,7 @@ function stripNotificationBar(body:string): string {
     if (notifbar) notifbar.remove()
     return doc.querySelector("body").innerHTML
 }
-
+/** Recieve requests to manually sign or encrypt the body on the compose window currently opened and focused*/
 browser.runtime.onMessage.addListener((data: Message)=>{
     if ( data.type=="encrypt" || data.type=="sign" ) {
         let func = data.type=="encrypt" ? encrypt : sign
@@ -99,13 +151,16 @@ browser.runtime.onMessage.addListener((data: Message)=>{
 })
 /** Clean up the message before sending (remove any possible notification bars) */
 messenger.compose.onBeforeSend.addListener( onBeforeSendEncrSign )
+/** This flag is raised if the composed message needs to be encrypted on sending. It is always lowered after a send */
+let encryptFlag = false
 /** Event listener for when a composed message is about to be sent */
 async function onBeforeSendEncrSign(tab, dets) {
+    console.log("Starting onBeforeSend Handler")
     if (!options) return
     let cancel = false 
     let finalDets = { body: stripNotificationBar(dets.body) }
 
-    if (options.options.autoSign) { // do auto sign
+    if (await composeGetSigned(tab.id)) { // do signed
         if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("auto signing!")
         let newDets = await sign(tab.id, finalDets.body)
         if (!newDets) {
@@ -115,8 +170,8 @@ async function onBeforeSendEncrSign(tab, dets) {
             finalDets.body = newDets.body
         }
     }
-
-    if (!cancel && options.options.autoEncrypt) { // do auto encrypt
+    if (options.options && options.options.autoEncrypt) encryptFlag = true
+    if (!cancel && encryptFlag) { // do auto encrypt
         if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("auto encrypting!")
         let newDets = await encrypt(tab.id, finalDets.body)
         if (!newDets) {
@@ -126,8 +181,16 @@ async function onBeforeSendEncrSign(tab, dets) {
             finalDets.body = newDets.body
         }
     }
-
+    encryptFlag = false
     return {cancel: cancel, details: finalDets}
+}
+/** Extracts actual aaa@bbb.com email address from MIME header style addresses */
+function getEmailFromRecipient(recipient:string): string {
+    if (recipient.slice(-1)=='>') { // if the from header has angle brackets at the end, we extract email from within
+        let i = recipient.lastIndexOf('<')
+        if (i!=-1) recipient = recipient.slice(i+1,-1)
+    }
+    return recipient
 }
 /** Always set to the message most recently opened message */
 let currentlyViewedMessageId = null
@@ -154,10 +217,7 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
     // get cannonical sender's address
     let sender = msgPart.headers.from[0] as string
     if (!sender) return
-    if (sender.slice(-1)=='>') { // if the from header has angle brackets at the end, we extract email from within
-        let i = sender.lastIndexOf('<')
-        if (i!=-1) sender = sender.slice(i+1,-1)
-    }
+    sender = getEmailFromRecipient(sender)
     // try and get html part
     let htmlVersion = true
     let found = searchParts(msgPart, hHTML)
@@ -271,7 +331,7 @@ async function decrypt(block:HTMLPreElement): Promise<{success:boolean,msg:strin
 
 async function verify(block:HTMLPreElement, sender:string): Promise<{success:boolean,msg:string[]}> {
     try {
-        const USE_TEST_CERT_INSTEAD_OF_DANE = true
+        const USE_TEST_CERT_INSTEAD_OF_DANE = false
         let cert
         if (USE_TEST_CERT_INSTEAD_OF_DANE) cert = testCert
         try {

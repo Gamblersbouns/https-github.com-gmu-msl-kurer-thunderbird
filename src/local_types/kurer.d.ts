@@ -17,18 +17,25 @@ type Options = {
         /** Toggle options for auto encrypt/sign */
         autoEncrypt?: boolean
         warningUnsecure?: boolean
+        /** The sign-on-send toggle defaults to this value */
         autoSign?: boolean
     }
 }
 /** Valid message tags used in runtime background script communication */
 type Message = 
-    {type: "getOptions"} |
-    {type: "sendOptions", payload: Options} |
-    {type: "encrypt", tabId?: number} |
-    {type: "sign"} |
-    {type: "decrypt", ciphertext: string} |
-    {type: "log", payload: any} |
-    {type: "dir", payload: any} |
-    {type: "notif", payload: string[], color?: 'pos' | 'mid' | 'neg', delay?: number} |
-    {type: "replace", payload: string, delay?:number} |
-    {type: "ping"}
+    {type: "getOptions"}
+    | {type: "sendOptions", payload: Options}
+    | {type: "encrypt", tabId?: number}
+    | {type: "sign"}
+    | {type: "decrypt", ciphertext: string}
+    | {type: "log", payload: any}
+    | {type: "dir", payload: any}
+    | {type: "notif", payload: string[], color?: 'pos' | 'mid' | 'neg', delay?: number}
+    | {type: "replace", payload: string, delay?:number}
+    | {type: "ping"}
+    | { type: "get", query:"composeTabId" }
+    | { type: "reply", query: "composeTabId", tabId: number }
+    | { type: "get", query: "composeSign", tabId: number}
+    | { type: "reply", query: "composeSign", signed: boolean}
+    | { type: "action", action: "composeSetSigned", signed: boolean, tabId: number }
+    | { type: "action", action: "composeSendEncrypt", tabId: number }

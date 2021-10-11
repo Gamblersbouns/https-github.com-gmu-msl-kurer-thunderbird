@@ -24,13 +24,8 @@
         "default_title": "Kurer",
         "default_icon": "images/icon-32.png"
     },
-    "message_display_action": {
-        "default_popup": "read_popup.html",
-        "default_title": "Kurer",
-        "default_icon": "images/icon-32.png"
-    },
     "permissions": [
-        "storage", "compose", "messagesRead", "messagesModify", "activeTab", "tabs"
+        "storage", "compose", "compose.send", "messagesRead", "messagesModify", "activeTab", "tabs"
     ],
     "icons": {
         "64": "images/icon.png",
