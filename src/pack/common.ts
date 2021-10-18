@@ -18,7 +18,7 @@ import { convertAddresses, parseAddresses, encodeHeaderValue, normalizeHeaderKey
 import * as DTypes from "../local_types/dane" 
 import * as forge from "node-forge"
 
-export const VERBOSE_LOGS = false
+export const VERBOSE_LOGS = true
 
 /** Returns Base64 array from ascii PEM format */
 function decodePem(pem:string) {

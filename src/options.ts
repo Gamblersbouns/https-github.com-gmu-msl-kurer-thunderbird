@@ -8,6 +8,7 @@ let statusBar: HTMLDivElement
 let autoEncrypt: HTMLInputElement
 let sendWarning: HTMLInputElement
 let autoSign: HTMLInputElement
+let sendStats: HTMLInputElement
 
 window.onload = () => {
     mainForm= <HTMLFormElement>document.getElementById("mainForm")
@@ -21,7 +22,8 @@ window.onload = () => {
     autoEncrypt = <HTMLInputElement>document.getElementById("opt_autoEncrypt")
     sendWarning = <HTMLInputElement>document.getElementById("opt_sendWarning")
     autoSign = <HTMLInputElement>document.getElementById("opt_autoSign")
-
+    sendStats = <HTMLInputElement>document.getElementById("optSendStats")
+    
     /* Save options of form submit*/
     mainForm.onsubmit = ev=>{
         let optionsToSet:Options = {options: {
@@ -103,16 +105,22 @@ function toggleSwitchAnim() {
  * @param newStatus text content to set statusbar to (supports html tags, spans, class styles and the works)
  */
 function showStatus(newStatus:string) {
-    let statusBar = document.getElementById('statusbar')
-    let statusText = <HTMLDivElement>document.getElementById('statustext')
-    statusText.innerHTML = newStatus
-    statusText.classList.remove('text-focus')
-    void statusText.offsetWidth; // hack to refresh element visually
-    statusText.classList.add('text-focus')
+    try {
+        let statusBar = document.getElementById('statusbar')
+        let statusText = <HTMLDivElement>document.getElementById('statustext')
+        statusText.innerHTML = newStatus
+        statusText.classList.remove('text-focus')
+        void statusText.offsetWidth; // hack to refresh element visually
+        statusText.classList.add('text-focus')
 
-    statusBar.parentElement.classList.remove('color-change')
-    void statusBar.parentElement.offsetWidth
-    statusBar.parentElement.classList.add('color-change')
+        statusBar.parentElement.classList.remove('color-change')
+        void statusBar.parentElement.offsetWidth
+        statusBar.parentElement.classList.add('color-change')
 
-    for (let i=0;i<2;i++) statusBar.parentElement.classList.toggle('color-change-2x')
+        for (let i=0;i<2;i++) statusBar.parentElement.classList.toggle('color-change-2x')
+    } catch(e) {
+        console.error(e) 
+        location.reload() // failsafe to reload page if messed up refs 
+    }
+    
 }
