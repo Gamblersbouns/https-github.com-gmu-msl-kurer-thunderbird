@@ -76,6 +76,11 @@ div.hl-border-strong {
 div.hl-border-weak {
     padding-left:20px; border-left: 2px solid slategray; border-radius: 2px;
 }
+
+.color-pos {color: #00e676}
+.color-neg {color: #ff5252}
+.color-mid {color: #eeff41}
+.font-sub {color: #78909c; font-size: 90%;}
 /** Switch
  -------------------------------------*/
 
@@ -89,6 +94,7 @@ width: 0;
 * 1. Adjust this to size
 */
 div.switchBox { /* A div containing a switch and related text*/
+    user-select: none;
     display: flex;
     justify-content: left;
     align-items: center;
@@ -145,6 +151,40 @@ div.switchBox > div:not(.checked) {
     -webkit-transform: translate3d(100%, 0, 0);
     -moz-transform: translate3d(100%, 0, 0);
     transform: translate3d(100%, 0, 0);
+}
+
+.noselect {
+    user-select: none;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black;
+}
+  
+.tooltip .tooltiptext {
+    font-size: x-small;
+    visibility: hidden;
+    width: 180px;
+    background-color: rgba(0,0,0,0.9);
+    color: lightgray;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -90px;
+
+    opacity: 0;
+    transition: opacity .6s;
+}
+  
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
 }
 
 /* ----------------------------------------------

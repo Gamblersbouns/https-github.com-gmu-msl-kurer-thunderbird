@@ -46,6 +46,17 @@
               <label class="switch"><input id="opt_sendWarning" type="checkbox" /><div></div></label>
               <div>Halt and show warning</div>
             </div>
+            <br>
+            When replying to an encrypted message:
+            <div class="switchBox">
+              <div class="tooltip">Preserve encryption
+                <span class="tooltiptext"><span class="color-mid">Note</span>: the recipient will be unable to read the quoted portion since it would remain encrypted for you</span>
+              </div>
+              <label class="switch"><input id="opt_replyEncr" type="checkbox" /><div></div></label>
+              <div class="tooltip">Decrypt the reply quote
+                <span class="tooltiptext">The original encrypted message will be decrypted when quoted in the reply, allowing the recipient to read it<br><br><span class="color-neg">Caution</span>: this permits you to send in-the-clear messages which were intended to be for your eyes only</span>
+              </div>
+            </div>
           </div>
 
           <div class="hl-border-strong" style="margin-top:20px;">
@@ -77,7 +88,10 @@
           <!-- Save button -->
           <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items:center;" >
             <button class="browser-style" style="height:95%" type="submit">Save</button>
-            <div class="hl-border-strong" style="display: flex; justify-content: left; align-items: center; justify-self: left; margin-left:10px; margin-right: 10px;"><input style="margin-right:10px;"type="checkbox" id="optSendStats" checked/><div style="font-size:smaller; color:slategray;" >Help&nbsp;make&nbsp;Kurer&nbsp;better&nbsp;by&nbsp;sending<br>anonymous&nbsp;statistics&nbsp;to&nbsp;the&nbsp;devs</div></div>
+            <div class="hl-border-strong" style="display: flex; justify-content: left; align-items: center; justify-self: left; margin-left:10px; margin-right: 10px;"><input style="margin-right:10px;"type="checkbox" id="optSendStats" checked/>
+              <div class="tooltip noselect" style="font-size:smaller; color:slategray;" >Help&nbsp;make&nbsp;Kurer&nbsp;better&nbsp;by&nbsp;sending<br>anonymous&nbsp;statistics&nbsp;to&nbsp;the&nbsp;devs
+                <span class="tooltiptext">We send a one-time anonymous packet that only contains your toggled options under the <i>Composing messages</i> section along with a randomly generated client id when clicking <i>Save</i><br><br>No other data is sent</span>
+            </div></div>
             <button style="justify-self:right;" style="height:95%" class="browser-style" type="reset">Reset</button>
           </div>
             
