@@ -8,6 +8,7 @@ let statusBar: HTMLDivElement
 let autoEncrypt: HTMLInputElement
 let sendWarning: HTMLInputElement
 let autoSign: HTMLInputElement
+let replyEncr: HTMLInputElement
 let sendStats: HTMLInputElement
 
 window.onload = () => {
@@ -22,10 +23,10 @@ window.onload = () => {
     autoEncrypt = <HTMLInputElement>document.getElementById("opt_autoEncrypt")
     sendWarning = <HTMLInputElement>document.getElementById("opt_sendWarning")
     autoSign = <HTMLInputElement>document.getElementById("opt_autoSign")
+    replyEncr = <HTMLInputElement>document.getElementById("opt_replyEncr")
     sendStats = <HTMLInputElement>document.getElementById("optSendStats")
     
-    /* Save options of form submit*/
-    mainForm.onsubmit = ev=>{
+    async function onSaveOpts(ev:Event) {
         let optionsToSet:Options = {options: {
             privateKey: privateKey.value.length>0 ? privateKey.value : null,
             cert: cert.value.length>0 ? cert.value : null,
@@ -38,16 +39,50 @@ window.onload = () => {
             // saving the toggle options
             autoEncrypt: !!autoEncrypt.checked,
             warningUnsecure: !!sendWarning.checked,
-            autoSign: !!autoSign.checked
+            autoSign: !!autoSign.checked,
+            replyEncr: !!replyEncr.checked
         }   }
-        browser.storage.local.set(optionsToSet)
-        .then(
-            ()=>{showStatus(/*html*/`<span style="color:#CBEFB6">Saved</span> successfully`)},
-            reason=>{showStatus(/*html*/`<span style="color:#D74E09">Error</span> on save: ${reason}`)}
-        )
+        // check if first time saving options
+        let options = <Options> await browser.storage.local.get('options')
+        if (options && !options.options.randId) {
+            // generate "randId" as a saved key to anonymously identify this user
+            let key = Math.floor((Math.random() * (Math.pow(16,16)-Math.pow(16,15)-1) + Math.pow(16,15))).toString(16).toUpperCase() // 16-digit hex key
+            // save key on first time options saving
+            optionsToSet.options.randId = key
+        } else if (options) { // if the key was already set, preserve that key
+            optionsToSet.options.randId = options.options.randId
+        }
+        try{ // set the new options
+            await browser.storage.local.set(optionsToSet)
+        } catch(e) {
+            showStatus(/*html*/`<span style="color:#D74E09">Error</span> on save: ${e}`)
+        }
+        showStatus(/*html*/`<span style="color:#CBEFB6">Saved</span> successfully`)
+        // if send stats is checked, send the stats we care about
+        if (sendStats.checked) {
+            // create our data packet with a standard key names (below)
+            let data = { 
+                id: optionsToSet.options.randId,
+                autoEncr: optionsToSet.options.autoEncrypt,
+                autoSign: optionsToSet.options.autoSign,
+                warnEncrFail: optionsToSet.options.warningUnsecure,
+                replyEncr: optionsToSet.options.replyEncr
+            }
+            // hardcoded end point for now
+            let endpointURL = 'https://aonova.ddns.net/kurer/options_stats.py'
+            // send data
+            await fetch(endpointURL, {
+                method: 'POST', mode:'no-cors', cache:'no-cache', 
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            })
+        }
         
         ev.preventDefault()
     }
+
+    /* Save options of form submit*/
+    mainForm.onsubmit = onSaveOpts
 
     /* Load options on form reset */
     mainForm.onreset = ev => {
