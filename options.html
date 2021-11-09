@@ -62,11 +62,15 @@
           <div class="hl-border-strong" style="margin-top:20px;">
             <h6>Private key for signing and decrypting</h6>
             <textarea class="browser-style centered pem-input" id="privateKey" placeholder="[Paste PEM text]"></textarea>
+            <br><br>
+            Key password<br>
+            <span style="font-size: x-small;" class="font-sub">Leave empty if your PKCS8 key above is not password encrypted</span>
+            <input type="password" class="browser-style centered pem-input" id="passcode"/>
           </div>
           <div class="hl-border-strong" style="margin-top:20px;">
             <h6>Your email address used when signing</h6>
             <span style="font-size: x-small;">Should match your "From" address chosen when composing mail</span>
-            <input type="email" class="browser-style centered pem-input" id="email" placeholder="john.doe@example.com"></textarea>
+            <input type="email" class="browser-style centered pem-input" id="email" placeholder="john.doe@example.com"/>
           </div>
           <div class="hl-border-strong" style="margin-top:20px;" hidden>
             <h6>Certificate sent with signatures</h6>
