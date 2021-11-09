@@ -84,6 +84,20 @@ declare namespace messenger.tabs {
     type WindowType = 
         "normal" | "popup" | "panel" | "app" | "devtools" | "addressBook" | 
         "messageCompose" | "messageDisplay"
+    type Tab = {
+        active: boolean,
+        highlighted: boolean,
+        index: number,
+        height?: number,
+        width?: number,
+        id?: number
+        mailTab?: boolean,
+        status?: 'loading' | 'complete',
+        title?: string,
+        type?: 'addressBook'|'calendar'|'calendarEvent'|'calendarTast'|'chat'|'content'|'mail'|'messageCompose'|'messageDisplay'|'special'|'tasks',
+        url?: string,
+        windowId?: number
+    }
 }
 
 declare namespace messenger.composeScripts {
