@@ -19,7 +19,7 @@ type Options = {
         warningUnsecure?: boolean
         /** The sign-on-send toggle defaults to this value */
         autoSign?: boolean
-        /** The option to preserve the secure quoted message on reply */
+        /** The option to preserve the secure quoted message on reply (decrypt reply quote if true)*/
         replyEncr?: boolean
         /** Random key generated on first time saving options */
         randId?: string
