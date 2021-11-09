@@ -44,14 +44,15 @@ window.onload = () => {
         }   }
         // check if first time saving options
         let options = <Options> await browser.storage.local.get('options')
-        if (options && !options.options.randId) {
-            // generate "randId" as a saved key to anonymously identify this user
-            let key = Math.floor((Math.random() * (Math.pow(16,16)-Math.pow(16,15)-1) + Math.pow(16,15))).toString(16).toUpperCase() // 16-digit hex key
-            // save key on first time options saving
-            optionsToSet.options.randId = key
-        } else if (options) { // if the key was already set, preserve that key
+        if (options && options.options && options.options.randId) {
+            // if the key was already set, preserve that key
             optionsToSet.options.randId = options.options.randId
-        }
+        } else {
+             // generate "randId" as a saved key to anonymously identify this user
+             let key = Math.floor((Math.random() * (Math.pow(16,16)-Math.pow(16,15)-1) + Math.pow(16,15))).toString(16).toUpperCase() // 16-digit hex key
+             // save key on first time options saving
+             optionsToSet.options.randId = key
+        }        
         try{ // set the new options
             await browser.storage.local.set(optionsToSet)
         } catch(e) {
@@ -88,7 +89,7 @@ window.onload = () => {
     mainForm.onreset = ev => {
         browser.storage.local.get('options')
         .then((result:Options)=>{
-            if (!result.options) {statusBar.innerText = `No previously saved options found`; return}
+            if (!result.options) {showStatus(`No previously saved options found`); return}
             let options = result.options
             if (options.email!==undefined) {
                 email.value = email.innerHTML = options.email
