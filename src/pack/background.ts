@@ -66,7 +66,7 @@ async function fetchOptionsOnStartup() {
         await browser.storage.local.set(defaultOptions)
         options = defaultOptions
     }
-    if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("background got options first time")
+    if (Common.VERBOSE_LOGS) console.log("background got options first time")
     initSignBadge()
 }
 
@@ -84,7 +84,95 @@ async function registerScripts() {
             css: [ {file: "css/notification-bar.css" }],
             js: [ {file: "/scripts/notifBar.js"} ]
         })
-    } catch (e) {if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.error(e)}
+    } catch (e) {if (Common.VERBOSE_LOGS) console.error(e)}
+}
+
+browser.tabs.onCreated.addListener(initReply)
+
+/** Event which changes the body of a newly created reply tab according to reply settings */
+async function initReply(tab:browser.tabs.Tab) {
+    // dont continue if options were not initialized
+    if (!options || !options.options) return
+    // we only care about compose tabs
+    if ((tab as messenger.tabs.Tab).type != "messageCompose") return
+    // we only care about replies
+    if ((await messenger.compose.getComposeDetails(tab.id)).type != "reply") return
+
+    // make sure we wait for content scripts to finish loading
+    const connected = await awaitScriptOnTab(tab.id)
+    if (!connected) {
+        if (Common.VERBOSE_LOGS) console.log(`Abort reply init on tab#${tab.id} -- could not connect!`)
+        return
+    }
+    const dets = await messenger.compose.getComposeDetails(tab.id)
+    const body = dets.body
+    const doc = new DOMParser().parseFromString(body,'text/html')
+    const originalSenderEmail = getEmailFromRecipient((typeof dets.to === 'string' ? dets.to : dets.to[0]) as string)
+    if (Common.VERBOSE_LOGS) console.log(`initReply got body sent by: ${originalSenderEmail}!\n${body}`)
+    // get the first blockquote with a "cite" attribute as our reply quote
+    const quoteArr = Array.from(doc.querySelectorAll('blockquote[cite]'))
+    // we dont care about this message anymore if there is not replied quote
+    if (!quoteArr) return
+    const replyQuote = quoteArr[0] as HTMLQuoteElement
+    if (!replyQuote) return
+    let origMessage = ""
+    if (replyQuote.querySelector('pre')) { //if there is a pre tag under blockquote we take inner
+        origMessage = (replyQuote.querySelector('pre')).innerText
+    } else {
+        origMessage = replyQuote.innerText
+    }
+    // now we decrypt and get signiture body if possible
+    let sign = false; let encr = false
+    let processed = ""
+    try {
+        if (origMessage.startsWith("Content-Type: application/pkcs7-mime") && options.options.privateKey) {
+            encr = true
+            processed = await Common.smimeDecrypt(origMessage,options.options.privateKey)
+        } else {
+            sign = true
+            processed = await Common.smimeGetSignatureBody(origMessage)
+        }
+        // at this point, processed is an html string of the original message 
+        // if its a pre block, lets try decrypting or signing its body
+        let procDoc = new DOMParser().parseFromString(processed,'text/html')
+        let newProcessed = procDoc.querySelector('pre').innerText
+        if (newProcessed.startsWith("Content-Type: application/pkcs7-mime") && options.options.privateKey) {
+            processed = await Common.smimeDecrypt(newProcessed,options.options.privateKey)
+            encr = true
+        } else {
+            sign = true
+            processed = await Common.smimeGetSignatureBody(newProcessed)
+        }
+    } catch(e) {if (Common.VERBOSE_LOGS) console.error(e)} // if at any point it fails, we are good
+    if (processed == "") return // the original message was not processed (meaning it was not SMIME)
+    // now we must change the reply according to the options
+    if (options.options.replyEncr) { // if option is set, we should replace the reply part entirely
+        replyQuote.innerHTML = processed
+    } else { // if option is unset, we should show it in a convenient transient view instead
+        let s1 = ""
+        if (sign&&encr) s1 = 'signed&nbsp;and&nbsp;encrypted'; else if (sign) s1='signed'; else if (encr) s1='encrypted';
+        let notifHTML = /*html*/`
+        <div class="nBarOuter nBarAnimIn">
+        <div class="nBarLogo">&#8205;</div>
+        <div class="nBarStatusContainer">
+            <div class="nBarStatus tooltip" style="border: none; padding-left:0px;"> 
+            <span class="font-sub font-spaced">&lt;&nbsp;contents&nbsp;of&nbsp;the&nbsp;${s1}&nbsp;original&nbsp;&gt;</span>
+            <span class="tooltiptext">For your eyes only - this box will be removed when sending<br>Do not try to modify!</span>
+            </div>
+            <div class="flexBreak">&#8205;</div>
+            <div class="nBarStatus" style="font-family: sans-serif; font-size: small; user-select: none; opacity:90%;">${processed}</div>
+        </div>
+        </div>
+        `
+        replyQuote.innerHTML = notifHTML+replyQuote.innerHTML // prepend our notification
+    }
+    // finally update the compose tab to reflect our changes to the body
+    if (! doc.firstElementChild) return
+    await messenger.compose.setComposeDetails(tab.id,{
+        body: doc.firstElementChild.innerHTML
+    })
+    if (Common.VERBOSE_LOGS) console.log(`\n   OriginalMessage:\n${origMessage}\n\n   Processed:\n${processed}`)
+    if (Common.VERBOSE_LOGS) console.log(`\n   New Body: ${(await messenger.compose.getComposeDetails(tab.id)).body}`)
 }
 
 /** Returns true if the compose tab given by id is set to be signed  */
@@ -98,7 +186,7 @@ async function composeGetSigned(tabId:number): Promise<boolean> {
 browser.storage.onChanged.addListener(changes=>{
     if (!changes.options) return // if options were unchanged, don't care
     Object.assign(options.options,changes.options.newValue)
-    if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("background updated options")
+    if (Common.VERBOSE_LOGS) console.log("background updated options")
     // communicate the changes in options
     ports.forEach(port => {
         let msg:Message = {
@@ -124,18 +212,22 @@ const SIGN_TEXT = "SIG"
 /** Sets the compose action badge globally acording to onSign option */
 function initSignBadge() {
     if (Common.VERBOSE_LOGS) console.log("INIT SIGN BADGE")
-    if (options && options.options && options.options.autoSign) {
+    if (options && options.options) {
         let sign = options.options.autoSign
         messenger.composeAction.setBadgeBackgroundColor({ color: sign?COLOR_SIGN:COLOR_NOT_SIGN })
         messenger.composeAction.setBadgeText({ text: SIGN_TEXT })
     }
 }
 /** Strips the extra html created by our notification bar logic to return the original body and returns the html content of the document body */
-function stripNotificationBar(body:string): string {
-    let doc = new DOMParser().parseFromString(body,'text/html')
-    let notifbar = doc.querySelector("div.nBarOuter")
-    if (notifbar) notifbar.remove()
-    return doc.querySelector("body").innerHTML
+function stripArtifactsFromHTML(body:string): string {
+    return stripAllQuery(body,'div.nBarOuter, .nStrip')
+}
+/** Generic version of stripNotificationBar that will remove all matched by the query */
+function stripAllQuery(html:string, query:string): string {
+    let doc = new DOMParser().parseFromString(html, 'text/html')
+    let found = doc.querySelectorAll(query)
+    found.forEach(elem=>{elem.remove()})
+    return doc.firstElementChild.innerHTML
 }
 /** Recieve requests to manually sign or encrypt the body on the compose window currently opened and focused*/
 browser.runtime.onMessage.addListener((data: Message)=>{
@@ -155,13 +247,13 @@ messenger.compose.onBeforeSend.addListener( onBeforeSendEncrSign )
 let encryptFlag = false
 /** Event listener for when a composed message is about to be sent */
 async function onBeforeSendEncrSign(tab, dets) {
-    console.log("Starting onBeforeSend Handler")
+    if (Common.VERBOSE_LOGS) console.log("Starting onBeforeSend Handler")
     if (!options) return
     let cancel = false 
-    let finalDets = { body: stripNotificationBar(dets.body) }
+    let finalDets = { body: stripArtifactsFromHTML(dets.body) }
 
     if (await composeGetSigned(tab.id)) { // do signed
-        if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("auto signing!")
+        if (Common.VERBOSE_LOGS) console.log("auto signing!")
         let newDets = await sign(tab.id, finalDets.body)
         if (!newDets) {
             if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.error("Failed sign, halting send")
@@ -172,7 +264,7 @@ async function onBeforeSendEncrSign(tab, dets) {
     }
     if (options.options && options.options.autoEncrypt) encryptFlag = true
     if (!cancel && encryptFlag) { // do auto encrypt
-        if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("auto encrypting!")
+        if (Common.VERBOSE_LOGS) console.log("auto encrypting!")
         let newDets = await encrypt(tab.id, finalDets.body)
         if (!newDets) {
             if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.error("Failed encryption, halting send if needed")
@@ -245,7 +337,7 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
         
     let connected = await awaitScriptOnTab(tab.id)
     if (!connected) {
-        if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log(`Abort decryption with content script on tab#${tab.id}`)
+        if (Common.VERBOSE_LOGS) console.log(`Abort decryption with content script on tab#${tab.id}`)
         return
     }
     if (msg.id != currentlyViewedMessageId) return
@@ -278,7 +370,10 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
     }
     if (msg.id != currentlyViewedMessageId) return
     let finalNotifs = []
-    if (decrypted.length>0) finalNotifs.push(decrypted[decrypted.length-1].msg)
+    if (decrypted.length>0) {
+        finalNotifs.push(decrypted[decrypted.length-1].msg)
+        if (verified.length>0) finalNotifs.push('/-break-/') // split up the notifications to a new row
+    }
     if (verified.length>0) finalNotifs.push(verified[verified.length-1].msg)
     else finalNotifs.push(`<span class="color-mid">Message not signed by sender</span>`)
     await browser.tabs.sendMessage(tab.id,{type:"replace", payload:doc.querySelector("body").innerHTML})
@@ -293,10 +388,10 @@ async function awaitScriptOnTab(tabId:number,repeat?:number,interval?:number): P
     while (!found && i<repeat) {
         try {
             let response = await browser.tabs.sendMessage(tabId,{type: "ping"} as Message)
-            if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log(`Ping success to tab#${tabId}: "${response}"`)
+            if (Common.VERBOSE_LOGS) console.log(`Ping success to tab#${tabId}: "${response}"`)
             found = true
         } catch (e) {
-            if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log(`Failed ping to tab#${tabId} - #${i}`,e)
+            if (Common.VERBOSE_LOGS) console.log(`Failed ping to tab#${tabId} - #${i}`,e)
             await new Promise(r => setTimeout(r, interval));
             i++
         }
@@ -418,12 +513,12 @@ async function encrypt(tabId:number, overrideBody?:string): Promise<{body:string
     let encryptedBody:string
     try {
         let body = overrideBody? overrideBody: composeDets.body
-        try { body = stripNotificationBar(body) } 
+        try { body = stripArtifactsFromHTML(body) } 
         catch (e) { browser.tabs.sendMessage(tabId,{type:"notif",payload:["Compose body HTML stripping error...",`<pre>${e}</pre>`]}); return null }
         // encrypt body
         encryptedBody = await Common.smimeEncrypt(body,recipientCert)
     } catch(e) {
-        if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("Encryption error", e)
+        if (Common.VERBOSE_LOGS) console.log("Encryption error", e)
         browser.tabs.sendMessage(tabId,{type:"notif",payload:["Encryption error...",`<pre>${e}</pre>`]})
         return null
     }
@@ -462,9 +557,9 @@ async function sign(tabId:number, overrideBody?:string, showEndNotif?:boolean): 
         //if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("SIGN: GOT CERT",cert)
 
         let body = overrideBody? overrideBody: composeDets.body
-        try { body = stripNotificationBar(body) } 
-        catch (e) { if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log(e); browser.tabs.sendMessage(tabId,{type:"notif",payload:["Compose body HTML stripping error...",`<pre>${e}</pre>`]}); return null }
-        //if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("SIGN: BODY",body)
+        try { body = stripArtifactsFromHTML(body) } 
+        catch (e) { if (Common.VERBOSE_LOGS) console.log(e); browser.tabs.sendMessage(tabId,{type:"notif",payload:["Compose body HTML stripping error...",`<pre>${e}</pre>`]}); return null }
+        //if (Common.VERBOSE_LOGS) console.log("SIGN: BODY",body)
         if (!options.options.privateKey || options.options.privateKey.length==0) throw new Error("Your signing key must be set in options")
         // make sure to sign HTML decoded version of body
         let decodedBody = Common.htmlDecode(body) 
@@ -486,7 +581,7 @@ async function sign(tabId:number, overrideBody?:string, showEndNotif?:boolean): 
     
         return detUpdate
     } catch (e) {
-        if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("Signing error", e)
+        if (Common.VERBOSE_LOGS) console.log("Signing error", e)
         browser.tabs.sendMessage(tabId,{type:"notif", delay:500, payload:["Signing error", `<pre>${e}</pre>`]})
         return null
     }
@@ -568,10 +663,10 @@ xjCEFVmxOR1/glo+/hTH0sD1t6yg4CoN/RMBnEU81Ayvahz4IMXOIGVkFw7PWp4S
 qUnxshOHtQ==
 -----END CERTIFICATE-----
 `
-if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("Background script finished loading 123!")
+if (Common.VERBOSE_LOGS) console.log("Background script finished loading 123!")
 testSignVerify()
 async function testSignVerify() {
-    if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log("Test signing and verifying")
+    if (Common.VERBOSE_LOGS) console.log("Test signing and verifying")
     try {
         const testString = `testString`
         let signedText = await Common.smimeSign(testString,testKey,testCert)
@@ -582,9 +677,9 @@ async function testSignVerify() {
         let failedVerify = await Common.smimeVerify(modifiedSignedText,testCert)
         let unixVerify = await Common.smimeVerify(toUnixNewlineText,testCert)
         //if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log(`Test result: successful verify ${verified.signatureVerified}`, `unsucessful verify ${failedVerify.signatureVerified}`)
-        if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log(`Unix newline version get verified?`,unixVerify.signatureVerified)
+        if (Common.VERBOSE_LOGS) console.log(`Unix newline version get verified?`,unixVerify.signatureVerified)
     } catch (e) {
-        if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.log('Test failed',`${e}`)
+        if (Common.VERBOSE_LOGS) console.log('Test failed',`${e}`)
     }
         
 }
