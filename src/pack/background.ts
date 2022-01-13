@@ -10,7 +10,7 @@ fetchOptionsOnStartup()
 
 /** Open communication ports among foreground scripts, mostly to stream updates to options and logs */
 let ports: browser.runtime.Port[] = []
-
+let encryptFlag = false
 browser.runtime.onConnect.addListener(port=>{
     ports.push(port)
     port.onMessage.addListener((msg:Message)=>{
@@ -42,6 +42,10 @@ browser.runtime.onConnect.addListener(port=>{
             if (msg.action=="composeSetSigned") { // simply modify the signed badge to the correct state
                 messenger.composeAction.setBadgeBackgroundColor({
                     color: msg.signed ? COLOR_SIGN : COLOR_NOT_SIGN,
+                    tabId: msg.tabId
+                })
+                messenger.composeAction.setBadgeText({
+                    text: msg.signed ? TEXT_SIGN : TEXT_NOT_SIGN,
                     tabId: msg.tabId
                 })
             } else if (msg.action=="composeSendEncrypt") { // send the message encrypted
@@ -116,10 +120,11 @@ async function initReply(tab:browser.tabs.Tab) {
     const replyQuote = quoteArr[0] as HTMLQuoteElement
     if (!replyQuote) return
     let origMessage = ""
+    // we will consider original messages as the text within the reply quote (either in a pre tag or url encoded)
     if (replyQuote.querySelector('pre')) { //if there is a pre tag under blockquote we take inner
         origMessage = (replyQuote.querySelector('pre')).innerText
     } else {
-        origMessage = replyQuote.innerText
+        origMessage = decodeURIComponent( replyQuote.innerText)
     }
     // now we decrypt and get signiture body if possible
     let sign = false; let encr = false
@@ -208,14 +213,15 @@ function rgbToHex(c: number[]) {
 const COLOR_NOT_SIGN = "#b71c1c"
 /** Badge color when sign is enabled */
 const COLOR_SIGN = "#2e7d32"
-const SIGN_TEXT = "SIG"
+const TEXT_SIGN = "SIG"
+const TEXT_NOT_SIGN = ""
 /** Sets the compose action badge globally acording to onSign option */
 function initSignBadge() {
     if (Common.VERBOSE_LOGS) console.log("INIT SIGN BADGE")
     if (options && options.options) {
         let sign = options.options.autoSign
         messenger.composeAction.setBadgeBackgroundColor({ color: sign?COLOR_SIGN:COLOR_NOT_SIGN })
-        messenger.composeAction.setBadgeText({ text: SIGN_TEXT })
+        messenger.composeAction.setBadgeText({ text: sign?TEXT_SIGN:TEXT_NOT_SIGN })
     }
 }
 /** Strips the extra html created by our notification bar logic to return the original body and returns the html content of the document body */
@@ -227,7 +233,7 @@ function stripAllQuery(html:string, query:string): string {
     let doc = new DOMParser().parseFromString(html, 'text/html')
     let found = doc.querySelectorAll(query)
     found.forEach(elem=>{elem.remove()})
-    return doc.firstElementChild.innerHTML
+    return doc.body.innerHTML
 }
 /** Recieve requests to manually sign or encrypt the body on the compose window currently opened and focused*/
 browser.runtime.onMessage.addListener((data: Message)=>{
@@ -243,37 +249,51 @@ browser.runtime.onMessage.addListener((data: Message)=>{
 })
 /** Clean up the message before sending (remove any possible notification bars) */
 messenger.compose.onBeforeSend.addListener( onBeforeSendEncrSign )
-/** This flag is raised if the composed message needs to be encrypted on sending. It is always lowered after a send */
-let encryptFlag = false
 /** Event listener for when a composed message is about to be sent */
 async function onBeforeSendEncrSign(tab, dets) {
     if (Common.VERBOSE_LOGS) console.log("Starting onBeforeSend Handler")
     if (!options) return
-    let cancel = false 
-    let finalDets = { body: stripArtifactsFromHTML(dets.body) }
-
-    if (await composeGetSigned(tab.id)) { // do signed
+    let cancel = false
+    
+    let finalDets:messenger.compose.ComposeDetails = { body: stripArtifactsFromHTML(dets.body) }
+    let needSign = false, needEncr = false
+    if (await composeGetSigned(tab.id)) needSign = true
+    if (options.options && options.options.autoEncrypt || encryptFlag) needEncr = true
+    encryptFlag = false // global encrypt flag used for send encrypted button override
+    const both = needSign && needEncr
+    if (needSign || needEncr) {
+        let msg = ""; 
+        if (needSign) msg += "signing"
+        if (needSign && needEncr) msg += " and "
+        if (needEncr) msg += "encrypting"
+        msg = msg.charAt(0).toUpperCase() + msg.slice(1) + " to send..."
+        browser.tabs.sendMessage(tab.id,{type:"notif", payload:[msg, "/-loader-/"]} as Message)
+        await new Promise(r => setTimeout(r, 800)); 
+    }
+    if (needSign) { // do signed
         if (Common.VERBOSE_LOGS) console.log("auto signing!")
         let newDets = await sign(tab.id, finalDets.body)
         if (!newDets) {
-            if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.error("Failed sign, halting send")
+            if (Common.VERBOSE_LOGS) console.error("Failed sign, halting send")
             cancel = true // cancel send if the warning option is set
         } else {
             finalDets.body = newDets.body
         }
     }
-    if (options.options && options.options.autoEncrypt) encryptFlag = true
-    if (!cancel && encryptFlag) { // do auto encrypt
+    if (!cancel && needEncr) { // do auto encrypt
         if (Common.VERBOSE_LOGS) console.log("auto encrypting!")
         let newDets = await encrypt(tab.id, finalDets.body)
         if (!newDets) {
-            if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.error("Failed encryption, halting send if needed")
+        if (Common.VERBOSE_LOGS) console.error("Failed encryption, halting send if needed")
             cancel = options.options.warningUnsecure // cancel send if the warning option is set
         } else {
             finalDets.body = newDets.body
         }
     }
-    encryptFlag = false
+    // html encode before sending to retain mime node text without modifications in the plaintext version of email
+    if (Common.VERBOSE_LOGS) console.log("OnBeforeSend unencoded body",JSON.stringify(finalDets.body))
+    finalDets.body = encodeURIComponent(finalDets.body)
+    if (Common.VERBOSE_LOGS) console.log("OnBeforeSend final encoded body",JSON.stringify(finalDets.body))
     return {cancel: cancel, details: finalDets}
 }
 /** Extracts actual aaa@bbb.com email address from MIME header style addresses */
@@ -290,11 +310,11 @@ let currentlyViewedMessageId = null
 messenger.messageDisplay.onMessageDisplayed.addListener( onDisplayDcrpVeri )
 /** Try and print out html message body part of displayed message*/
 async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.MessageHeader) {
-    
+    // type header tags to look for
     const hPlaintext = "text/plain"; const hHTML = "text/html"
     currentlyViewedMessageId = msg.id
     let msgPart = await messenger.messages.getFull(msg.id)
-    if (Common.VERBOSE_LOGS) if (Common.VERBOSE_LOGS) console.dir(msgPart)
+    if (Common.VERBOSE_LOGS) console.dir(msgPart)
     // do a depth first search for desired mime part by header (text or html)
     function searchParts(part:messenger.messages.MessagePart, contentTypeToMatch:string): messenger.messages.MessagePart {
         if (part.contentType == contentTypeToMatch) return part
@@ -310,73 +330,81 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
     let sender = msgPart.headers.from[0] as string
     if (!sender) return
     sender = getEmailFromRecipient(sender)
-    // try and get html part
-    let htmlVersion = true
-    let found = searchParts(msgPart, hHTML)
+    // try and get plaintext part
+    let found = searchParts(msgPart, hPlaintext)
     if (!found) { // compatability if the message was sent with plaintext
-        found = searchParts(msgPart, hPlaintext)
-        htmlVersion = false
+        if (Common.VERBOSE_LOGS) console.log("onDisplayDcrpVeri error: text/plain mimePart not found.")
+        return
     }
-    /** The workable string representation of the html message body */
-    let body
-    if (htmlVersion) {
-        body = found.body
-    } else {
-        body = Common.htmlEncode(found.body)
-        body = `<pre>${body}</pre>`
-    }
+    /** The workable string representation of the plaintext message body */
+    let body = found.body
+    // html decode the message
+    body = decodeURIComponent(body)
     // parse html email as DOM
     let doc = new DOMParser().parseFromString(body,'text/html')
-    // attempt to find a pre block with encrypted or signed SMIME content
-    let block = doc.querySelector("pre")
-    if (
-        !block ||
-        !block.innerText.startsWith("Content-Type: application/pkcs7-mime") &&
-        !block.innerText.startsWith("Content-Type: multipart/signed")
-    ) return  
-        
+    const ctEncr = "Content-Type: application/pkcs7-mime"
+    const ctSign = "Content-Type: multipart/signed"
+    // stop parsing if this message is not smime
+    if (! (body.startsWith(ctEncr) || body.startsWith(ctSign)) ) return  
+    // sync up with the display script on window tab displaying the message
     let connected = await awaitScriptOnTab(tab.id)
-    if (!connected) {
+    if (!connected) { // abort if connection failed (tab was closed already, timeout, etc)
         if (Common.VERBOSE_LOGS) console.log(`Abort decryption with content script on tab#${tab.id}`)
         return
     }
+    // check that the user didnt click onto a different message
     if (msg.id != currentlyViewedMessageId) return
-    await browser.tabs.sendMessage(tab.id,{type:"notif",payload:["Decrypting and Verifying SMIME message"]})
+    // show notif bar prograss message
+    await browser.tabs.sendMessage(tab.id,{type:"notif",payload:["Decrypting and verifying SMIME message",`/-loader-/`]})
+    // start timer for minimum processing time
     let time = performance.now()
-    
-    
+    // create result objects arrays that will contain the status outputs of decryption/verifiction 
     let decrypted: {success:boolean,msg}[] = [] , verified: {success:boolean,msg}[] = []
     while (true) {
-        let block = doc.querySelector("pre")
-        if (!block) break
-        if (block.innerText.startsWith("Content-Type: application/pkcs7-mime")) {
-            decrypted.push(await decrypt(block))
+        // If outermost node is an encrypted smime node, attempt to replace with decrypted 
+        if (body.startsWith(ctEncr)) {
+            const result = await decrypt(body)
+            if (result[0] != null) body = result[0]
+            decrypted.push(result[1])
             // if last decryption was not successful, do not process any further
             if (!decrypted[decrypted.length-1].success) break
             continue
         }
-        if (block.innerText.startsWith("Content-Type: multipart/signed")) {
-            verified.push(await verify(block, sender))
+        // If the outermost node is a signed smime node, attempt to verify and replace with content
+        if (body.startsWith(ctSign)) {
+            const result = await verify(body, sender)
+            if (result[0] != null) body = result[0]
+            verified.push(result[1])
             // if last decryption was not successful, do not process any further
             if (!verified[verified.length-1].success) break
             continue
         }
+        // if the body is no longer an smime node (missing the content type heading): assume we are done
         else break
     }
-    let duration = performance.now() - time
-    const requiredDuration = 800
-    if (duration < requiredDuration) {
-        await new Promise(r => setTimeout(r, requiredDuration - duration)); // minimum processing time for security
-    }
-    if (msg.id != currentlyViewedMessageId) return
+    // set up the final notifications to show in the display window
     let finalNotifs = []
     if (decrypted.length>0) {
         finalNotifs.push(decrypted[decrypted.length-1].msg)
         if (verified.length>0) finalNotifs.push('/-break-/') // split up the notifications to a new row
     }
+    // push the last "signed" status to the notifications to show
     if (verified.length>0) finalNotifs.push(verified[verified.length-1].msg)
     else finalNotifs.push(`<span class="color-mid">Message not signed by sender</span>`)
-    await browser.tabs.sendMessage(tab.id,{type:"replace", payload:doc.querySelector("body").innerHTML})
+
+    // consider minimum processing time
+    let duration = performance.now() - time
+    const requiredDuration = 800
+    if (duration < requiredDuration) {
+        // let elapse minimum processing time for security/usability
+        await new Promise(r => setTimeout(r, requiredDuration - duration)); 
+    }
+    // one final check that the user is still looking at the same message tab orignally clicked on
+    if (msg.id != currentlyViewedMessageId) return
+
+    // replace the displayed message with the new processed body
+    await browser.tabs.sendMessage(tab.id,{type:"replace", payload:body})
+    // show the final notification bar 
     await browser.tabs.sendMessage(tab.id,{type:"notif",payload:finalNotifs.flat()})
 
 }
@@ -398,54 +426,58 @@ async function awaitScriptOnTab(tabId:number,repeat?:number,interval?:number): P
     }
     return found
 }
-/** Attempt to decrypt given html pre block containing smime encrypted text */
-async function decrypt(block:HTMLPreElement): Promise<{success:boolean,msg:string[]}> {
-    if (!options.options || !options.options.privateKey) {
-        return {
+/** Attempt to decrypt given string of a full smime encrypted node 
+ *  @returns [ new-body-to-set , result-description-object ] tuple. Null body = no changes.
+*/
+async function decrypt(node:string): Promise<[string,{success:boolean,msg:string[]}]> {
+    if (!options.options || !options.options.privateKey) { // fail if missing private key
+        return [ null, {
             success: false,
             msg: [
                 `<span class="color-neg">SMIME Decryption Failed</span>`,
                 `<span class="font-sub"><i>Private Key</i> must be configured in settings</span>`
             ]
-        }
+        } ]
     }
     try {
-        let decryptedBlock = await Common.smimeDecrypt(block.innerText,options.options.privateKey)
-        block.outerHTML = decryptedBlock
-        return {
+        let decryptedBlock = await Common.smimeDecrypt(node,options.options.privateKey)
+        return [ decryptedBlock, {
             success: true,
             msg: [`<span class="color-pos">SMIME Message Decrypted</span>`,`<span class="font-sub">This email was for your eyes only</span>`]
-        }
+        } ]
     } catch (e) {
-        return {
+        return [ null, {
             success: false,
             msg: [`<span class="color-neg">SMIME Decryption Error</span>`,`<pre class="font-sub">${e}</pre>`]
-        }
+        } ]
     }
 }
-
-async function verify(block:HTMLPreElement, sender:string): Promise<{success:boolean,msg:string[]}> {
+/** Attempt to verify given string of a full smime signed node 
+ *  @returns [ new-body-to-set , result-description-object ] tuple. Null body = no changes.
+*/
+async function verify(node:string, sender:string): Promise<[string, {success:boolean,msg:string[]} ]> {
     try {
+        // set true for testing (disable dane and test signing with a given cert)
         const USE_TEST_CERT_INSTEAD_OF_DANE = false
         let cert
         if (USE_TEST_CERT_INSTEAD_OF_DANE) cert = testCert
         try {
             if (!cert) cert = await getCertFromDANE(sender)
-        } catch (e) {
-            return {
+        } catch (e) { // could not find cert over dane: fail and return
+            const newBody = await Common.smimeGetSignatureBody(node)
+            return [ newBody, {
                 success: false,
                 msg: [
                     `<span class="color-neg">Signature unverified</span>`,
                     `<span class="font-sub">Unable to find <i>${sender}</i> certificate over DANE</span>`,
                     `<pre class="font-sub">${e}</pre>`
                 ]
-            }
+            } ]
         }
-        // we must redicode the inside of the pre tags in order to pass verification
-        const decodedContent = Common.htmlDecode(block.innerHTML)
-        let verified = (await Common.smimeVerify(decodedContent,cert)).signatureVerified
-        block.outerHTML = await Common.smimeGetSignatureBody(decodedContent)
-        return {
+        // nominally, try to verify and record response, but always return the inner body
+        let verified = (await Common.smimeVerify(node,cert)).signatureVerified
+        const newBody = await Common.smimeGetSignatureBody(node)
+        return [ newBody, {
             success: verified,
             msg: [
                 verified?`<span class="color-pos">Signature Verified</span>`
@@ -453,16 +485,15 @@ async function verify(block:HTMLPreElement, sender:string): Promise<{success:boo
                 verified?`<span class="font-sub">From <i>${sender}</i></span>`
                 :`<span class="font-sub">Mail does not match signiture!</span>`
             ]
-        }
-
-    } catch (e) {
-        return {
+        } ]
+    } catch (e) { // any other issues with verification
+        return [ null, {
             success: false,
             msg: [
                 `<span class="color-neg">Signature unverified</span>`,
                 `<pre class="font-sub">${e}</pre>`
             ]
-        }
+        } ]
     }
 }
 
@@ -470,7 +501,7 @@ async function verify(block:HTMLPreElement, sender:string): Promise<{success:boo
  * Given the tab ID of a composition pane, will replace the body with encrypted text 
  *  @returns the updated details object, or null on error (will generate correct error messsaging on screen) 
  */
-async function encrypt(tabId:number, overrideBody?:string): Promise<{body:string}> {
+async function encrypt(tabId:number, overrideBody?:string): Promise<messenger.compose.ComposeDetails> {
     let composeDets = await messenger.compose.getComposeDetails(tabId)
     if (composeDets.to.length<1) {
         browser.tabs.sendMessage(tabId,{type:"notif",payload:["Please enter one recipient"]} as Message)
@@ -487,7 +518,8 @@ async function encrypt(tabId:number, overrideBody?:string): Promise<{body:string
     if (recipient) recipientCert = recipient.cert
     if (!recipientCert) {
         browser.tabs.sendMessage(tabId,{type:"notif",payload:["Cache miss, conducting DANE query..."]})
-        let cfSMIMEA = await Common.DNSGetSMIMEA(composeDets.to[0].toString())
+        let cfSMIMEA = await Common.DNSGetSMIMEA( getEmailFromRecipient((typeof composeDets.to === 'string' ? composeDets.to : composeDets.to[0]) as string) )
+        if (Common.VERBOSE_LOGS) console.dir(cfSMIMEA)
         if (!cfSMIMEA) {
             browser.tabs.sendMessage(tabId,{type:"notif",payload:["Target record not found..."]})
             return null
@@ -516,22 +548,22 @@ async function encrypt(tabId:number, overrideBody?:string): Promise<{body:string
         try { body = stripArtifactsFromHTML(body) } 
         catch (e) { browser.tabs.sendMessage(tabId,{type:"notif",payload:["Compose body HTML stripping error...",`<pre>${e}</pre>`]}); return null }
         // encrypt body
+        if (Common.VERBOSE_LOGS) console.log("Encrypt body",JSON.stringify(body))
         encryptedBody = await Common.smimeEncrypt(body,recipientCert)
+        if (Common.VERBOSE_LOGS) console.log("Encrypted output",JSON.stringify(encryptedBody))
     } catch(e) {
         if (Common.VERBOSE_LOGS) console.log("Encryption error", e)
         browser.tabs.sendMessage(tabId,{type:"notif",payload:["Encryption error...",`<pre>${e}</pre>`]})
         return null
     }
     /** Value to return - object containing the updated body of the mail before sending */
-    let detUpdate
+    let detUpdate: messenger.compose.ComposeDetails
     try {
-        // encode encrypted body into pre tags
-        let finalBody = Common.htmlEncode(encryptedBody) 
-        finalBody = `<pre>${finalBody}</pre>`
-        detUpdate = { body: finalBody}
-        messenger.compose.setComposeDetails(tabId,detUpdate)
+        let encodedBody = encryptedBody
+        detUpdate = { body : encodedBody}
+        await messenger.compose.setComposeDetails(tabId,detUpdate)
         // send update notif with a delay, to allow compose details to update first
-        browser.tabs.sendMessage(tabId,{type:"notif", delay:500, payload:["Encryption complete",`To: <span class="color-green">${composeDets.to[0]}</span>`]})
+        browser.tabs.sendMessage(tabId,{type:"notif", payload:["Encryption complete",`To: <span class="color-green">${composeDets.to[0]}</span>`]})
     } catch (e) {
         browser.tabs.sendMessage(tabId,{type:"notif",payload:["Composition error...",`<pre>${e}</pre>`]})
         return null
@@ -546,7 +578,7 @@ async function encrypt(tabId:number, overrideBody?:string): Promise<{body:string
  * @param overrideBody If defined, use this instead of reading the body of the message 
  * @returns null on failed sign. 
  * */
-async function sign(tabId:number, overrideBody?:string, showEndNotif?:boolean): Promise<{body:string}> {
+async function sign(tabId:number, overrideBody?:string, showEndNotif?:boolean): Promise<messenger.compose.ComposeDetails> {
     let composeDets = await messenger.compose.getComposeDetails(tabId)
     try {
         if (!options) throw new Error("Options not configured")
@@ -561,19 +593,16 @@ async function sign(tabId:number, overrideBody?:string, showEndNotif?:boolean): 
         catch (e) { if (Common.VERBOSE_LOGS) console.log(e); browser.tabs.sendMessage(tabId,{type:"notif",payload:["Compose body HTML stripping error...",`<pre>${e}</pre>`]}); return null }
         //if (Common.VERBOSE_LOGS) console.log("SIGN: BODY",body)
         if (!options.options.privateKey || options.options.privateKey.length==0) throw new Error("Your signing key must be set in options")
-        // make sure to sign HTML decoded version of body
-        let decodedBody = Common.htmlDecode(body) 
-        body = await Common.smimeSign(decodedBody,options.options.privateKey,cert)
-        
-        let detUpdate
+        if (Common.VERBOSE_LOGS) console.log("Signing body",JSON.stringify(body))
+        body = await Common.smimeSign(body,options.options.privateKey,cert)
+        if (Common.VERBOSE_LOGS) console.log("Signed output",JSON.stringify(body))
+        let detUpdate: messenger.compose.ComposeDetails
         try {
-            // re encode the whole thing before putting it in pre tags
-            let finalBody = Common.htmlEncode(body) 
-            finalBody = `<pre>${finalBody}</pre>`
-            detUpdate = { body: finalBody}
-            messenger.compose.setComposeDetails(tabId,detUpdate)
+            let encodedBody = body
+            detUpdate = { body: encodedBody}
+            await messenger.compose.setComposeDetails(tabId,detUpdate)
             // send update notif with a delay, to allow compose details to update first
-            if (showEndNotif) browser.tabs.sendMessage(tabId,{type:"notif", delay:500, payload:["Signing complete",`By: <span class="color-green">${options.options.email}</span>`]})
+            if (showEndNotif) browser.tabs.sendMessage(tabId,{type:"notif", payload:["Signing complete",`By: <span class="color-green">${options.options.email}</span>`]})
         } catch (e) {
             browser.tabs.sendMessage(tabId,{type:"notif",payload:["Composition error...",`<pre>${e}</pre>`]})
             return null
@@ -582,7 +611,7 @@ async function sign(tabId:number, overrideBody?:string, showEndNotif?:boolean): 
         return detUpdate
     } catch (e) {
         if (Common.VERBOSE_LOGS) console.log("Signing error", e)
-        browser.tabs.sendMessage(tabId,{type:"notif", delay:500, payload:["Signing error", `<pre>${e}</pre>`]})
+        browser.tabs.sendMessage(tabId,{type:"notif", payload:["Signing error", `<pre>${e}</pre>`]})
         return null
     }
 }
