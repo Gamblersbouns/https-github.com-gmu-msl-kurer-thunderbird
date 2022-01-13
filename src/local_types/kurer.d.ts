@@ -1,3 +1,7 @@
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/
 /* Types specific to our extension-defined objects */
 
 /** The object format of our stored options data */
@@ -43,3 +47,7 @@ type Message =
     | { type: "reply", query: "composeSign", signed: boolean}
     | { type: "action", action: "composeSetSigned", signed: boolean, tabId: number }
     | { type: "action", action: "composeSendEncrypt", tabId: number }
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/

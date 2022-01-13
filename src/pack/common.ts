@@ -1,3 +1,8 @@
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/
+
 /** 
  * This links up all crypto dependencies and contains our custom-built DANE-S/MIME helper functions. 
  */
@@ -33,94 +38,8 @@ function decodePem(pem:string) {
     }
     return res;
 }
-/*!
- * MIT License
- * 
- * Copyright (c) Peculiar Ventures. All rights reserved.
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- * 
- */
-class PemConverter {
-  CertificateTag; CertificateRequestTag; PublicKeyTag; PrivateKeyTag
 
-  constructor() {
-      this.CertificateTag = "CERTIFICATE";
-      this.CertificateRequestTag = "CERTIFICATE REQUEST";
-      this.PublicKeyTag = "PUBLIC KEY";
-      this.PrivateKeyTag = "PRIVATE KEY";
-  }
-  static isPem(data) {
-      return typeof data === "string"
-          && /-{5}BEGIN [A-Z0-9 ]+-{5}([a-zA-Z0-9=+/\n\r]+)-{5}END [A-Z0-9 ]+-{5}/g.test(data);
-  }
-  static decode(pem) {
-      const pattern = /-{5}BEGIN [A-Z0-9 ]+-{5}([a-zA-Z0-9=+/\n\r]+)-{5}END [A-Z0-9 ]+-{5}/g;
-      const res = [];
-      let matches = null;
-      while (matches = pattern.exec(pem)) {
-          const base64 = matches[1]
-              .replace(/\r/g, "")
-              .replace(/\n/g, "");
-          res.push(Convert.FromBase64(base64));
-      }
-      return res;
-  }
-  static encode(rawData, tag) {
-      if (Array.isArray(rawData)) {
-          const raws = new Array();
-          rawData.forEach(element => {
-              raws.push(this.encodeBuffer(element, tag));
-          });
-          return raws.join("\n");
-      }
-      else {
-          return this.encodeBuffer(rawData, tag);
-      }
-  }
-  static encodeBuffer(rawData, tag) {
-      const base64 = Convert.ToBase64(rawData);
-      let sliced;
-      let offset = 0;
-      const rows = Array();
-      while (offset < base64.length) {
-          if (base64.length - offset < 64) {
-              sliced = base64.substring(offset);
-          }
-          else {
-              sliced = base64.substring(offset, offset + 64);
-              offset += 64;
-          }
-          if (sliced.length !== 0) {
-              rows.push(sliced);
-              if (sliced.length < 64) {
-                  break;
-              }
-          }
-          else {
-              break;
-          }
-      }
-      const upperCaseTag = tag.toLocaleUpperCase();
-      return `-----BEGIN ${upperCaseTag}-----\n${rows.join("\n")}\n-----END ${upperCaseTag}-----`;
-  }
-}
+
 /** Returns string <'s and >'s etc encoded into html */
 export function htmlEncode(preHTML:string): string {
   return he.encode(preHTML)
@@ -525,8 +444,12 @@ async function sha256(text: string): Promise<string> {
       .join("");
   return hashHex;
 }
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/
 
-/* ====================================================================================
+/* ------------------------------------------------------------------------------------
     START of "MimeNode" class, based on "emailjs-mime-builder":
 
         Copyright (c) 2013 Andris Reinman
@@ -548,7 +471,7 @@ async function sha256(text: string): Promise<string> {
         LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
         OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
         THE SOFTWARE. 
-========================================================================================*/
+---------------------------------------------------------------------------------------- */
 type MimeNodeOptions = {
     /** root node for this tree */
     rootNode?: MimeNode
@@ -1039,3 +962,92 @@ class MimeNode {
 /*======================================================================================
   END of adapted content
 ========================================================================================*/ 
+/* -------------------------------------------------------------------------------
+ * MIT License
+ * 
+ * Copyright (c) Peculiar Ventures. All rights reserved.
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * 
+ */
+class PemConverter {
+  CertificateTag; CertificateRequestTag; PublicKeyTag; PrivateKeyTag
+
+  constructor() {
+      this.CertificateTag = "CERTIFICATE";
+      this.CertificateRequestTag = "CERTIFICATE REQUEST";
+      this.PublicKeyTag = "PUBLIC KEY";
+      this.PrivateKeyTag = "PRIVATE KEY";
+  }
+  static isPem(data) {
+      return typeof data === "string"
+          && /-{5}BEGIN [A-Z0-9 ]+-{5}([a-zA-Z0-9=+/\n\r]+)-{5}END [A-Z0-9 ]+-{5}/g.test(data);
+  }
+  static decode(pem) {
+      const pattern = /-{5}BEGIN [A-Z0-9 ]+-{5}([a-zA-Z0-9=+/\n\r]+)-{5}END [A-Z0-9 ]+-{5}/g;
+      const res = [];
+      let matches = null;
+      while (matches = pattern.exec(pem)) {
+          const base64 = matches[1]
+              .replace(/\r/g, "")
+              .replace(/\n/g, "");
+          res.push(Convert.FromBase64(base64));
+      }
+      return res;
+  }
+  static encode(rawData, tag) {
+      if (Array.isArray(rawData)) {
+          const raws = new Array();
+          rawData.forEach(element => {
+              raws.push(this.encodeBuffer(element, tag));
+          });
+          return raws.join("\n");
+      }
+      else {
+          return this.encodeBuffer(rawData, tag);
+      }
+  }
+  static encodeBuffer(rawData, tag) {
+      const base64 = Convert.ToBase64(rawData);
+      let sliced;
+      let offset = 0;
+      const rows = Array();
+      while (offset < base64.length) {
+          if (base64.length - offset < 64) {
+              sliced = base64.substring(offset);
+          }
+          else {
+              sliced = base64.substring(offset, offset + 64);
+              offset += 64;
+          }
+          if (sliced.length !== 0) {
+              rows.push(sliced);
+              if (sliced.length < 64) {
+                  break;
+              }
+          }
+          else {
+              break;
+          }
+      }
+      const upperCaseTag = tag.toLocaleUpperCase();
+      return `-----BEGIN ${upperCaseTag}-----\n${rows.join("\n")}\n-----END ${upperCaseTag}-----`;
+  }
+}
+/* ------------------------------------------------------------------------------------------------ */

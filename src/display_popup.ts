@@ -1,3 +1,7 @@
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/
 var encryptButton: HTMLButtonElement = null
 var desc: HTMLDivElement = null
 var subtitle: HTMLDivElement = null
@@ -29,3 +33,7 @@ function optionsUpdate(newOptions: Options) {
     encryptButton.textContent = "Auto-decrypting messages"
     encryptButton.disabled = true
 }
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/

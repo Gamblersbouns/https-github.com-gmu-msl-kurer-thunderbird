@@ -1,4 +1,8 @@
 
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/
 // This content script injects a notification bar which can be interfaced via runtime messages of type "notif"
 
 /** Communication port with background script */
@@ -98,3 +102,7 @@ function log(obj:any, dir?: boolean) {
     let message: Message = {type: dir?"dir":"log", payload: obj}
     port.postMessage(message)
 }
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/

@@ -1,3 +1,7 @@
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/
 var encryptButton: HTMLButtonElement = null
 var signSwitch: HTMLInputElement = null
 var desc: HTMLDivElement = null
@@ -114,3 +118,7 @@ function initSwitchAnimation() {
         input.dispatchEvent(new Event('change'))
     })
 }
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/

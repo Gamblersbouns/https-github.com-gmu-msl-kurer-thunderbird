@@ -1,3 +1,7 @@
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/
 let mainForm:HTMLFormElement
 let privateKey:HTMLTextAreaElement
 let cert:HTMLTextAreaElement
@@ -160,3 +164,7 @@ function showStatus(newStatus:string) {
     }
     
 }
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/

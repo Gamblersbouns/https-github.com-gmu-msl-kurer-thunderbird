@@ -1,3 +1,8 @@
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/
+
 /**
  * This is the entry-point for the Thunderbird plugin API made available as a background script for Kurer.
  * This is compiled by webpack (`npm run build`) into `scripts/background_bundled.js` which is loaded via the main manifest.
@@ -713,5 +718,8 @@ async function testSignVerify() {
         
 }
 
-
+/*----------------------------------------------------
+ * © 2021 George Mason University 
+ * For further information please contact ott@gmu.edu
+------------------------------------------------------*/
 
