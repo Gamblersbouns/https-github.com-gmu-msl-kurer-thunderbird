@@ -312,7 +312,7 @@ pkijs.setEngine(
 
   // Create new multipart/signed Mime message
   const mimeBuilder = new MimeNode(
-      'multipart/signed; protocol="application/pkcs7-signature"; micalg=sha-256; name=smime.p7m; boundary="----------"'
+      'multipart/signed; protocol="application/pkcs7-signature"; micalg=sha-256; name=smime.p7m;'
   );
 
   if (sender) {
