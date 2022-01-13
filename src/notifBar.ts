@@ -22,6 +22,9 @@ function initNotifBar(text: string[]) {
         if (t == "/-break-/") { // magic string for forced new row in notification
             notifText.classList.add("flexBreak")
             notifText.innerHTML = "&#8205;"
+        } else if (t == "/-loader-/") { // magic string for animated loader
+            notifText.classList.add("nBarStatus")
+            notifText.innerHTML = `<span class="loader"><span class="loader-box"></span><span class="loader-box"></span><span class="loader-box"></span></span>`
         } else {
             notifText.classList.add("nBarStatus")
             notifText.innerHTML = t
@@ -29,6 +32,7 @@ function initNotifBar(text: string[]) {
         notifContainer.appendChild(notifText)
     })
     document.body.insertBefore(notifBar, document.body.firstChild);
+    port.postMessage({type: "log", payload: "initNotifBar:\n"+notifBar.outerHTML} as Message)
 }
 /** Shows the passed notification html in the notification bar (which may already exist) */
 function showNotif(notif:string[]) {
@@ -44,6 +48,9 @@ function showNotif(notif:string[]) {
             if (t == "/-break-/") { // magic string for forced new row in notification
                 notifText.classList.add("flexBreak")
                 notifText.innerHTML = "&#8205;"
+            } else if (t == "/-loader-/") { // magic string for animated loader
+                notifText.classList.add("nBarStatus")
+                notifText.innerHTML = `<span class="loader"><span class="loader-box"></span><span class="loader-box"></span><span class="loader-box"></span></span>`
             } else {
                 notifText.classList.add("nBarStatus")
                 notifText.innerHTML = t
@@ -54,8 +61,9 @@ function showNotif(notif:string[]) {
         notifBar.classList.remove("nBarAnimColorin")
         void notifBar.offsetWidth
         notifBar.classList.add("nBarAnimColorin")
-        
+        port.postMessage({type: "log", payload: "showNotif:\n"+notifBar.outerHTML} as Message)
     }
+    
 }
 /** Replace the html body with given html */
 async function replace(newBody:string, delay?:number) {
