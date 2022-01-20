@@ -15,6 +15,13 @@ let autoSign: HTMLInputElement
 let replyEncr: HTMLInputElement
 let sendStats: HTMLInputElement
 
+let telemetryMsg: HTMLDivElement
+let userStudyModal: HTMLDivElement
+
+let sepPrivKeySwitch: HTMLInputElement
+let privKey1Header: HTMLHeadingElement
+let privKey2Section: HTMLDivElement
+
 window.onload = () => {
     mainForm= <HTMLFormElement>document.getElementById("mainForm")
     privateKey = <HTMLTextAreaElement>document.getElementById("privateKey")
@@ -30,6 +37,35 @@ window.onload = () => {
     replyEncr = <HTMLInputElement>document.getElementById("opt_replyEncr")
     sendStats = <HTMLInputElement>document.getElementById("optSendStats")
     
+    sepPrivKeySwitch = <HTMLInputElement>document.getElementById("opt_seperateKeys")
+    sepPrivKeySwitch.onclick = ()=>{ handleDualPrivKeySwitch(200) }
+    handleDualPrivKeySwitch(0)
+    privKey1Header = <HTMLHeadingElement>document.getElementById("privKey_message")
+    privKey2Section = <HTMLDivElement>document.getElementById("privKey2_section")
+
+    // add open pitch modal functionality to the bottom telemetry link
+    telemetryMsg = <HTMLDivElement>document.getElementById("telemetry_msg")
+    userStudyModal = <HTMLDivElement>document.getElementById("user_study_modal")
+
+    telemetryMsg.onclick = ()=>{ // open userstudy modal by clicking on message
+        userStudyModal.style.display = "block"
+    }
+    window.onclick = event => { //close userstudy modal by clicking away
+        if (event.target == userStudyModal) {
+            userStudyModal.style.display = "none"
+        }
+    }
+    document.getElementById("ustud_yes_btn").onclick = ()=>{
+        userStudyModal.style.display = "none"
+        sendStats.checked = true
+        showStatus(`<span class="color-pos-faint">Accepted</span> user study opt-in`)
+    }
+    document.getElementById("ustud_no_btn").onclick = ()=>{
+        userStudyModal.style.display = "none"
+        sendStats.checked = false
+        showStatus(`<span class="color-neg-faint">Declined</span> user study opt-in`)
+    }
+
     async function onSaveOpts(ev:Event) {
         let optionsToSet:Options = {options: {
             privateKey: privateKey.value.length>0 ? privateKey.value : null,
@@ -118,6 +154,17 @@ window.onload = () => {
 
     mainForm.dispatchEvent(new Event('reset'))
     toggleSwitchAnim()
+}
+async function handleDualPrivKeySwitch(delay: number) {
+    let sepKeys = sepPrivKeySwitch.checked
+    await new Promise(r => setTimeout(r, delay)); 
+    if (sepKeys) {
+        privKey1Header.textContent = "Key for decrypting"
+        privKey2Section.style.display = "block"
+    } else {
+        privKey1Header.textContent = "Key for decrypting and signing"
+        privKey2Section.style.display = "none"
+    }
 }
 /** Animate glow on switch prompts depending on selection */
 function toggleSwitchAnim() {

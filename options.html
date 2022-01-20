@@ -60,17 +60,45 @@
           </div>
 
           <div class="hl-border-strong" style="margin-top:20px;">
-            <h6>Private key for signing and decrypting</h6>
-            <textarea class="browser-style centered pem-input" id="privateKey" placeholder="[Paste PEM text]"></textarea>
-            <br><br>
-            Key password<br>
-            <span style="font-size: x-small;" class="font-sub">Leave empty if your PKCS8 key above is not password encrypted</span>
-            <input type="password" class="browser-style centered pem-input" id="passcode"/>
+            <h6>Private keys</h6>
+            <div class="switchBox">
+              <div class="tooltip">Single key for sign/encr
+                <span class="tooltiptext">If you want to use a <span class="color-mid">single&nbsp;key</span> for both signing and decrypting</span>
+              </div>
+              <label class="switch"><input id="opt_seperateKeys" type="checkbox" /><div></div></label>
+              <div class="tooltip">Seperate keys for sign/encr
+                <span class="tooltiptext">If you want to use <span class="color-mid">two&nbsp;keys</span>: one for signing and another for decrypting</span>
+              </div>
+            </div>
+            <div class="hl-border-weak" style="margin-bottom:30px;">
+              <h6 id="privKey_message">Key for decrypting and signing</h6>
+              <textarea class="browser-style centered pem-input" id="privateKey" placeholder="[Paste PEM text]"></textarea>
+              <br><br>
+              Key password<br>
+              <span style="font-size: x-small;" class="font-sub">Leave empty if your PKCS8 key above is not password encrypted</span>
+              <input type="password" class="browser-style centered pem-input" id="passcode"/>
+            </div>
+            <div id="privKey2_section" class="hl-border-weak anim_scalein">
+              <h6 id="privKey2_message">Key for signing</h6>
+              <textarea class="browser-style centered pem-input" id="privateKey2" placeholder="[Paste PEM text]"></textarea>
+              <br><br>
+              Key password<br>
+              <span style="font-size: x-small;" class="font-sub">Leave empty if your PKCS8 key above is not password encrypted</span>
+              <input type="password" class="browser-style centered pem-input" id="passcode"/>
+            </div>
           </div>
           <div class="hl-border-strong" style="margin-top:20px;">
             <h6>Your email address used when signing</h6>
-            <span style="font-size: x-small;">Should match your "From" address chosen when composing mail</span>
+            <span style="font-size: x-small;" class="font-sub">Should match your "From" address chosen when composing mail</span>
             <input type="email" class="browser-style centered pem-input" id="email" placeholder="john.doe@example.com"/>
+          </div>
+          <div class="hl-border-strong" style="margin-top:20px;">
+            <h6>Other Options</h6>
+            <div class="tooltip"><span style="font-size: x-small;" >DNS recursive resolver to use for DANE</span>
+              <input type="url" class="browser-style centered pem-input" id="doh_server" placeholder="cloudflare-dns.com/dns-query"/>
+              <span class="tooltiptext"><span class="color-mid">Note</span>: Kurer currently uses Cloudflare 1.1.1.1 HTTP GET JSON API, and will only work with compatible DoH resolvers.<br>Leave empty to use default. </span>
+            </div>
+            
           </div>
           <div class="hl-border-strong" style="margin-top:20px;" hidden>
             <h6>Certificate sent with signatures</h6>
@@ -93,7 +121,7 @@
           <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items:center;" >
             <button class="browser-style" style="height:95%" type="submit">Save</button>
             <div class="hl-border-strong" style="display: flex; justify-content: left; align-items: center; justify-self: left; margin-left:10px; margin-right: 10px;"><input style="margin-right:10px;"type="checkbox" id="optSendStats" checked/>
-              <div class="tooltip noselect" style="font-size:smaller; color:slategray;" >Help&nbsp;make&nbsp;Kurer&nbsp;better&nbsp;by&nbsp;sending<br>anonymous&nbsp;statistics&nbsp;to&nbsp;the&nbsp;devs
+              <div id="telemetry_msg" class="tooltip noselect font-sub clickable-text" style="font-size:smaller;">Help&nbsp;make&nbsp;Kurer&nbsp;better&nbsp;by&nbsp;sending<br>anonymous&nbsp;statistics&nbsp;to&nbsp;the&nbsp;devs
                 <span class="tooltiptext">We send a one-time anonymous packet that only contains your toggled options under the <i>Composing messages</i> section along with a randomly generated client id when clicking <i>Save</i><br><br>No other data is sent</span>
             </div></div>
             <button style="justify-self:right;" style="height:95%" class="browser-style" type="reset">Reset</button>
@@ -111,5 +139,19 @@
     </div>
     <script src="scripts/options.js"></script>
     
+    <!-- User-study pitch modal -->
+    <div id="user_study_modal" class="modal"><div class="modal-content-bottom">
+      <div>
+        <h2>Did you know?</h2>
+        <p>Kurer is an <a href="https://github.com/gmu-msl/kurer-thunderbird">open-source project</a> and part of a study looking at <span class="color-pos-faint">cryptography designed for everyday people.</span></p>
+        <p><span class="font-sub">// participation / consent</span><br>
+          <a class="font-sub" href="https://docs.google.com/spreadsheets/d/1qY9R_eCTKV1DBe04KIrUDQjwzXL9CngMCv3ANYzomvs/edit?usp=sharing"> // telemetry advanced details</a>
+        </p>
+      </div>
+      <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items:center;">
+        <button id="ustud_yes_btn" class="browser-style button btn-green" style="height:95%" type="button" >Accept</button>
+        <button id="ustud_no_btn" style="justify-self:right;" style="height:95%" class="browser-style button btn-red" type="reset">No Thanks</button>
+      </div>
+    </div></div>
   </body>
 </html>
