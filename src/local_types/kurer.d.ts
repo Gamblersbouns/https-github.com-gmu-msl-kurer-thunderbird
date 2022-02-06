@@ -1,5 +1,5 @@
 /*----------------------------------------------------
- * © 2021 George Mason University 
+ * © 2021 George Mason University
  * For further information please contact ott@gmu.edu
 ------------------------------------------------------*/
 /* Types specific to our extension-defined objects */
@@ -38,7 +38,7 @@ type Options = {
     }
 }
 /** Valid message tags used in runtime background script communication */
-type Message = 
+type Message =
     {type: "getOptions"}
     | {type: "sendOptions", payload: Options}
     | {type: "encrypt", tabId?: number}
@@ -55,7 +55,24 @@ type Message =
     | { type: "reply", query: "composeSign", signed: boolean}
     | { type: "action", action: "composeSetSigned", signed: boolean, tabId: number }
     | { type: "action", action: "composeSendEncrypt", tabId: number }
+
+/**
+ * The data format of the telemtry sent on save when the user allows it
+ */
+type KurerTelemObj = {
+    id: string
+    client: "TB" | "OL"
+    version: string
+    autoEncr: boolean
+    autoSign: boolean
+    warnEncrFail: boolean
+    replyEncr: boolean
+    recResolver: string
+    seperateSignDecrKey: boolean
+    userSurveyOccupation: string
+    userSurveyAgeRange: [number, number] // integer range of ages inclusive
+}
 /*----------------------------------------------------
- * © 2021 George Mason University 
+ * © 2021 George Mason University
  * For further information please contact ott@gmu.edu
 ------------------------------------------------------*/
