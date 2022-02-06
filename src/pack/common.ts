@@ -1,26 +1,26 @@
 /*----------------------------------------------------
- * © 2021 George Mason University 
+ * © 2021 George Mason University
  * For further information please contact ott@gmu.edu
 ------------------------------------------------------*/
 
-/** 
- * This links up all crypto dependencies and contains our custom-built DANE-S/MIME helper functions. 
+/**
+ * This links up all crypto dependencies and contains our custom-built DANE-S/MIME helper functions.
  */
 
 //const WebCrypto = require("@peculiar/webcrypto").Crypto // unneeded if we assume browser compat.
 import * as he from "he"
 import { Convert } from "pvtsutils"
 import {stringToArrayBuffer, arrayBufferToString} from "pvutils"
-//const MimeBuilder = require("emailjs-mime-builder") 
-import smimeParse from "emailjs-mime-parser" 
+//const MimeBuilder = require("emailjs-mime-builder")
+import smimeParse from "emailjs-mime-parser"
 import * as asn1js from "asn1js"
 import * as pkijs from "pkijs"
 import { base64Encode, quotedPrintableEncode, foldLines, parseHeaderValue } from 'emailjs-mime-codec'
 import { detectMimeType } from 'emailjs-mime-types'
-import { convertAddresses, parseAddresses, encodeHeaderValue, normalizeHeaderKey, 
-    generateBoundary, isPlainText, buildHeaderValue } from 'emailjs-mime-builder/dist/utils'  
+import { convertAddresses, parseAddresses, encodeHeaderValue, normalizeHeaderKey,
+    generateBoundary, isPlainText, buildHeaderValue } from 'emailjs-mime-builder/dist/utils'
 //import { PemConverter } from "@peculiar/x509"
-import * as DTypes from "../local_types/dane" 
+import * as DTypes from "../local_types/dane"
 import * as forge from "node-forge"
 
 export const VERBOSE_LOGS = true
@@ -91,6 +91,7 @@ pkijs.setEngine(
   encryptionAlgo: string = "AES-CBC",
   length: Number = 128
 ): Promise<string> {
+  if (VERBOSE_LOGS) console.log('SMIME-encrypt-INPUT', JSON.stringify(text), JSON.stringify(certificatePem))
   // Decode input certificate
   const asn1 = asn1js.fromBER(PemConverter.decode(certificatePem)[0]);
   const certSimpl = new pkijs.Certificate({ schema: asn1.result });
@@ -122,7 +123,9 @@ pkijs.setEngine(
       .setHeader("content-transfer-encoding", "base64")
       .setContent(new Uint8Array(ber));
 
-  return mimeBuilder.build();
+    const toRet = mimeBuilder.build();
+    if (VERBOSE_LOGS) console.log('SMIME-encrypt-OUTPUT', JSON.stringify(toRet))
+  return toRet
 }
 
 /**
@@ -135,6 +138,7 @@ pkijs.setEngine(
   text: string,
   privateKeyPem: string
 ): Promise<string> {
+  if (VERBOSE_LOGS) console.log('SMIME-decrypt-INPUT', JSON.stringify(text))
   // Decode input private key
   const privateKeyBuffer = PemConverter.decode(privateKeyPem)[0];
   let parser
@@ -173,11 +177,12 @@ pkijs.setEngine(
       throw new Error("SmimeDecryptError");
   }
       let toReturn = Convert.ToUtf8String(message);
-      if (VERBOSE_LOGS) console.log('SMIME-decrypt-output', JSON.stringify(toReturn))
+      if (VERBOSE_LOGS) console.log('SMIME-decrypt-OUTPUT', JSON.stringify(toReturn))
       return toReturn
 }
 
 /**
+ * Adapted from PKI.js' CMSSignedComplexExample
  * @returns {String} signed string
  * @param {String} text string to sign
  * @param {String} privateKeyPem user's private key to sign with in PEM format
@@ -194,31 +199,31 @@ pkijs.setEngine(
   // create PKCS#7 signed data with authenticatedAttributes
   // attributes include: PKCS#9 content-type, message-digest, and signing-time
   const p7 = forge.pkcs7.createSignedData();
-
+  if (VERBOSE_LOGS) console.log('SMIME-sign-input', JSON.stringify(text), privateKeyPem)
   // set content
   p7.content = forge.util.createBuffer(text, "utf8");
-  if (VERBOSE_LOGS) console.log('SMIME-sign-input', JSON.stringify(text), privateKeyPem)
+
   // add signer
   p7.addCertificate(certificatePem);
   p7.addSigner({
-      key: privateKeyPem,
-      certificate: certificatePem,
-      digestAlgorithm: forge.pki.oids.sha256,
-      authenticatedAttributes: [
-          {
-              type: forge.pki.oids.contentType,
-              value: forge.pki.oids.data,
-          },
-          {
-              type: forge.pki.oids.messageDigest,
-              // value will be auto-populated at signing time
-          },
-          {
-              type: forge.pki.oids.signingTime,
-              // value can also be auto-populated at signing time
-              value: new Date().toString(),
-          },
-      ],
+    key: privateKeyPem,
+    certificate: certificatePem,
+    digestAlgorithm: forge.pki.oids.sha256,
+    authenticatedAttributes: [
+      {
+        type: forge.pki.oids.contentType,
+        value: forge.pki.oids.data,
+      },
+      {
+        type: forge.pki.oids.messageDigest,
+        // value will be auto-populated at signing time
+      },
+      {
+        type: forge.pki.oids.signingTime,
+        // value can also be auto-populated at signing time
+        value: new Date().toString(),
+      },
+    ],
   });
 
   // sign
@@ -231,35 +236,35 @@ pkijs.setEngine(
 
   // Create new multipart/signed Mime message
   const mimeBuilder = new MimeNode(
-      'multipart/signed; protocol="application/pkcs7-signature"; micalg=sha-256; name=smime.p7m;'
+    // 'multipart/signed; protocol="application/pkcs7-signature"; micalg=sha-256; name=smime.p7m; boundary="----------"'
+    'multipart/signed; protocol="application/pkcs7-signature"; micalg=sha-256; name=smime.p7m;'
   );
 
   if (sender) {
-      mimeBuilder.setHeader("from", sender);
+    mimeBuilder.setHeader("from", sender);
   }
   if (recipient) {
-      mimeBuilder.setHeader("to", recipient);
+    mimeBuilder.setHeader("to", recipient);
   }
   if (subject) {
-      mimeBuilder.setHeader("subject", subject);
+    mimeBuilder.setHeader("subject", subject);
   }
 
-  const plainText = new MimeNode("text/plain").setContent(text);
+  const plainText = new MimeNode("text/plain").setHeader("content-transfer-encoding", "base64").setContent(text);
 
-  const mimeSignature = new MimeNode(
-      "application/pkcs7-signature; name=smime.p7s; charset=binary"
-  )
-      .setHeader("content-description", "Signed Data")
-      .setHeader("content-disposition", "attachment; filename=smime.p7s")
-      .setHeader("content-transfer-encoding", "base64")
-      .setContent(binaryPem);
+  const mimeSignature = new MimeNode("application/pkcs7-signature; name=smime.p7s; charset=binary")
+    .setHeader("content-description", "Signed Data")
+    .setHeader("content-disposition", "attachment; filename=smime.p7s")
+    .setHeader("content-transfer-encoding", "base64")
+    .setContent(binaryPem);
 
   mimeBuilder.appendChild(plainText);
   mimeBuilder.appendChild(mimeSignature);
-    let signedMimeNodes = mimeBuilder.build()
-  if (VERBOSE_LOGS) console.log('SMIME-sign-output', JSON.stringify(signedMimeNodes))
-  return signedMimeNodes
-  
+
+  const smimeSignedText = mimeBuilder.build();
+  if (VERBOSE_LOGS) console.log('SMIME-sign-output', JSON.stringify(smimeSignedText))
+
+  return smimeSignedText;
 }
 /**
  * Get an SMIMEA record for a corresponding email address if it exists
@@ -308,7 +313,7 @@ pkijs.setEngine(
 }
 export async function smimeVerify(smime: string, certificatePem: string): Promise<{signatureVerified: boolean}> {
   let parser;
-  if (VERBOSE_LOGS) console.log('SMIME-verify', JSON.stringify(smime), certificatePem)
+  if (VERBOSE_LOGS) console.log('SMIME-verify-INPUT', JSON.stringify(smime), certificatePem)
   try {
       // Parse S/MIME message to get CMS signed content
       parser = smimeParse(smime);
@@ -367,9 +372,9 @@ export async function smimeVerify(smime: string, certificatePem: string): Promis
       extendedMode: true,
   };
   let toReturn = await cmsSignedSimpl.verify(verificationParameters);
-  if (VERBOSE_LOGS) console.dir(toReturn)
+  if (VERBOSE_LOGS) console.dir('SMIME-verify-OUTPUT',toReturn)
   return toReturn
-  
+
 }
 
 
@@ -392,7 +397,7 @@ export async function smimeGetSignatureBody(smime: string): Promise<string> {
   const bodyNode = parser.childNodes[0];
   if (bodyNode.contentType.value === "text/plain") {
     let toReturn = arrayBufferToString(bodyNode.content.buffer);
-    toReturn = decodeURIComponent(escape(toReturn)) // we must decode utf-8 bytes to get unicode string 
+    toReturn = decodeURIComponent(escape(toReturn)) // we must decode utf-8 bytes to get unicode string
     if (VERBOSE_LOGS) console.log('result of smimeGetSignatureBody\n',JSON.stringify(toReturn))
     return toReturn
   } else {
@@ -445,7 +450,7 @@ async function sha256(text: string): Promise<string> {
   return hashHex;
 }
 /*----------------------------------------------------
- * © 2021 George Mason University 
+ * © 2021 George Mason University
  * For further information please contact ott@gmu.edu
 ------------------------------------------------------*/
 
@@ -470,7 +475,7 @@ async function sha256(text: string): Promise<string> {
         AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
         LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
         OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-        THE SOFTWARE. 
+        THE SOFTWARE.
 ---------------------------------------------------------------------------------------- */
 type MimeNodeOptions = {
     /** root node for this tree */
@@ -485,16 +490,16 @@ type MimeNodeOptions = {
     includeBccInHeader?: boolean
 }
 /**
- * A mime tree node, being a root, branch, or leaf. 
- * The default constructor makes a new tree as the root node. 
+ * A mime tree node, being a root, branch, or leaf.
+ * The default constructor makes a new tree as the root node.
  */
 class MimeNode {
 
     nodeCounter:number
     content; includeBccInHeader
-    baseBoundary:string 
-    date:Date 
-    rootNode:MimeNode; filename:string; parentNode:MimeNode; 
+    baseBoundary:string
+    date:Date
+    rootNode:MimeNode; filename:string; parentNode:MimeNode;
     _nodeId:number; _childNodes; _headers;
 
     /**
@@ -508,24 +513,24 @@ class MimeNode {
         * @param {Object} [options.parentNode] immediate parent for this node
         * @param {Object} [options.filename] filename for an attachment node
         * @param {String} [options.baseBoundary] shared part of the unique multipart boundary
-    */ 
+    */
     constructor (contentType:string, options:MimeNodeOptions = {}) {
       this.nodeCounter = 0
       /**
        * shared part of the unique multipart boundary
        */
       this.baseBoundary = options.baseBoundary || Date.now().toString() + Math.random()
-  
+
       /**
        * If date headers is missing and current node is the root, this value is used instead
        */
       this.date = new Date()
-  
+
       /**
        * Root node for current mime tree
        */
       this.rootNode = options.rootNode || this
-  
+
       /**
        * If filename is specified but contentType is not (probably an attachment)
        * detect the content type from filename extension
@@ -539,40 +544,40 @@ class MimeNode {
           contentType = detectMimeType(this.filename.split('.').pop())
         }
       }
-  
+
       /**
        * Immediate parent for this node (or undefined if not set)
        */
       this.parentNode = options.parentNode
-  
+
       /**
        * Used for generating unique boundaries (prepended to the shared base)
        */
       this._nodeId = ++this.rootNode.nodeCounter
-  
+
       /**
        * An array for possible child nodes
        */
       this._childNodes = []
-  
+
       /**
        * A list of header values for this node in the form of [{key:'', value:''}]
        */
       this._headers = []
-  
+
       /**
        * If content type is set (or derived from the filename) add it to headers
        */
       if (contentType) {
         this.setHeader('content-type', contentType)
       }
-  
+
       /**
        * If true then BCC header is included in RFC2822 message.
        */
       this.includeBccInHeader = options.includeBccInHeader || false
     }
-  
+
     /**
      * Creates and appends a child node. Arguments provided are passed to MimeNode constructor
      *
@@ -585,7 +590,7 @@ class MimeNode {
       this.appendChild(node)
       return node
     }
-  
+
     /**
      * Appends an existing node to the mime tree. Removes the node from an existing
      * tree if needed
@@ -598,13 +603,13 @@ class MimeNode {
         childNode.rootNode = this.rootNode
         childNode._nodeId = ++this.rootNode.nodeCounter
       }
-  
+
       childNode.parentNode = this
-  
+
       this._childNodes.push(childNode)
       return childNode
     }
-  
+
     /**
      * Replaces current node with another node
      *
@@ -615,23 +620,23 @@ class MimeNode {
       if (node === this) {
         return this
       }
-  
+
       this.parentNode._childNodes.forEach((childNode, i) => {
         if (childNode === this) {
           node.rootNode = this.rootNode
           node.parentNode = this.parentNode
           node._nodeId = this._nodeId
-  
+
           this.rootNode = this
           this.parentNode = undefined
-  
+
           node.parentNode._childNodes[i] = node
         }
       })
-  
+
       return node
     }
-  
+
     /**
      * Removes current node from the mime tree
      *
@@ -641,7 +646,7 @@ class MimeNode {
       if (!this.parentNode) {
         return this
       }
-  
+
       for (var i = this.parentNode._childNodes.length - 1; i >= 0; i--) {
         if (this.parentNode._childNodes[i] === this) {
           this.parentNode._childNodes.splice(i, 1)
@@ -651,7 +656,7 @@ class MimeNode {
         }
       }
     }
-  
+
     /**
      * Sets a header value. If the value for selected key exists, it is overwritten.
      * You can set multiple values as well by using [{key:'', value:''}] or
@@ -663,7 +668,7 @@ class MimeNode {
      */
     setHeader (key, value) {
       let added = false
-  
+
       // Allow setting multiple headers at once
       if (!value && key && typeof key === 'object') {
         if (key.key && key.value) {
@@ -678,11 +683,11 @@ class MimeNode {
         }
         return this
       }
-  
+
       key = normalizeHeaderKey(key)
-  
+
       const headerValue = { key, value }
-  
+
       // Check if the value exists and overwrite
       for (var i = 0, len = this._headers.length; i < len; i++) {
         if (this._headers[i].key === key) {
@@ -698,15 +703,15 @@ class MimeNode {
           }
         }
       }
-  
+
       // match not found, append the value
       if (!added) {
         this._headers.push(headerValue)
       }
-  
+
       return this
     }
-  
+
     /**
      * Adds a header value. If the value for selected key exists, the value is appended
      * as a new field and old one is not touched.
@@ -732,12 +737,12 @@ class MimeNode {
         }
         return this
       }
-  
+
       this._headers.push({ key: normalizeHeaderKey(key), value })
-  
+
       return this
     }
-  
+
     /**
      * Retrieves the first mathcing value of a selected key
      *
@@ -752,7 +757,7 @@ class MimeNode {
         }
       }
     }
-  
+
     /**
      * Sets body content for current node. If the value is a string, charset is added automatically
      * to Content-Type (if it is text/*). If the value is a Typed Array, you need to specify
@@ -765,7 +770,7 @@ class MimeNode {
       this.content = content
       return this
     }
-  
+
     /**
      * Builds the rfc2822 message from the current node. If this is a root node,
      * mandatory header fields are set if missing (Date, Message-Id, MIME-Version)
@@ -777,7 +782,7 @@ class MimeNode {
       const contentType = (this.getHeader('Content-Type') || '').toString().toLowerCase().trim()
       let transferEncoding
       let flowed
-  
+
       if (this.content) {
         transferEncoding = (this.getHeader('Content-Transfer-Encoding') || '').toString().toLowerCase().trim()
         if (!transferEncoding || ['base64', 'quoted-printable'].indexOf(transferEncoding) < 0) {
@@ -796,21 +801,21 @@ class MimeNode {
             transferEncoding = transferEncoding || 'base64'
           }
         }
-  
+
         if (transferEncoding) {
           this.setHeader('Content-Transfer-Encoding', transferEncoding)
         }
       }
-  
+
       if (this.filename && !this.getHeader('Content-Disposition')) {
         this.setHeader('Content-Disposition', 'attachment')
       }
-  
+
       this._headers.forEach(header => {
         const key = header.key
         let value = header.value
         let structured
-  
+
         switch (header.key) {
           case 'Content-Disposition':
             structured = parseHeaderValue(value)
@@ -821,20 +826,20 @@ class MimeNode {
             break
           case 'Content-Type':
             structured = parseHeaderValue(value)
-  
+
             this._addBoundary(structured)
-  
+
             if (flowed) {
               structured.params.format = 'flowed'
             }
             if (String(structured.params.format).toLowerCase().trim() === 'flowed') {
               flowed = true
             }
-  
+
             if (structured.value.match(/^text\//) && typeof this.content === 'string' && /[\u0080-\uFFFF]/.test(this.content)) {
               structured.params.charset = 'utf-8'
             }
-  
+
             value = buildHeaderValue(structured)
             break
           case 'Bcc':
@@ -843,16 +848,16 @@ class MimeNode {
               return
             }
         }
-  
+
         // skip empty lines
         value = encodeHeaderValue(key, value)
         if (!(value || '').toString().trim()) {
           return
         }
-  
+
         lines.push(foldLines(key + ': ' + value))
       })
-  
+
       // Ensure mandatory header fields
       if (this.rootNode === this) {
         if (!this.getHeader('Date')) {
@@ -879,7 +884,7 @@ class MimeNode {
         }
       }
       lines.push('')
-  
+
       if (this.content) {
         switch (transferEncoding) {
           case 'quoted-printable':
@@ -900,7 +905,7 @@ class MimeNode {
           lines.push('')
         }
       }
-  
+
       if (this.multipart) {
         this._childNodes.forEach(node => {
           lines.push('--' + this.boundary)
@@ -909,10 +914,10 @@ class MimeNode {
         lines.push('--' + this.boundary + '--')
         lines.push('')
       }
-  
+
       return lines.join('\r\n')
     }
-  
+
     /**
      * Generates and returns SMTP envelope with the sender address and a list of recipients addresses
      *
@@ -934,10 +939,10 @@ class MimeNode {
           convertAddresses(parseAddresses(header.value), envelope.to)
         }
       })
-  
+
       return envelope
     }
-  
+
     /**
      * Checks if the content type is multipart and defines boundary if needed.
      * Doesn't return anything, modifies object argument instead.
@@ -946,11 +951,11 @@ class MimeNode {
      */
     _addBoundary (structured) {
       this.contentType = structured.value.trim().toLowerCase()
-  
+
       this.multipart = this.contentType.split('/').reduce(function (prev, value) {
         return prev === 'multipart' ? value : false
       })
-  
+
       if (this.multipart) {
         this.boundary = structured.params.boundary = structured.params.boundary || this.boundary || generateBoundary(this._nodeId, this.rootNode.baseBoundary)
       } else {
@@ -961,22 +966,22 @@ class MimeNode {
   }
 /*======================================================================================
   END of adapted content
-========================================================================================*/ 
+========================================================================================*/
 /* -------------------------------------------------------------------------------
  * MIT License
- * 
+ *
  * Copyright (c) Peculiar Ventures. All rights reserved.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -984,7 +989,7 @@ class MimeNode {
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- * 
+ *
  */
 class PemConverter {
   CertificateTag; CertificateRequestTag; PublicKeyTag; PrivateKeyTag
