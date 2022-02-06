@@ -9,7 +9,12 @@ type Options = {
     options: {
         /** Unencrypted private key (temp. testing use) */
         privateKey?: string
-        /** User's email address when sending */
+        /** If True, consider "privateKey" as only for decrypting and use "signingKey" for signing -- otherwise "privateKey" is to be used for both*/
+        dualKeyMode?: boolean
+        /** Key used for signing if dualKeyMode is set */
+        signingKey?: string
+        /** TODO: handle key passwords */
+        /** User's email address when sending - used for signing */
         email?: string
         /** Cert used when generating signiture */
         cert?: string
@@ -25,8 +30,11 @@ type Options = {
         autoSign?: boolean
         /** The option to preserve the secure quoted message on reply (decrypt reply quote if true)*/
         replyEncr?: boolean
+
         /** Random key generated on first time saving options */
         randId?: string
+        /** Non-default DoH resolver set in options */
+        dnsRslvr?: string
     }
 }
 /** Valid message tags used in runtime background script communication */
