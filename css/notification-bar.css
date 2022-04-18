@@ -11,14 +11,17 @@ div.nBarLogo {
     padding: 0px;
     width: 32px;
     height: 32px;
+    flex: none;
 }
 
 .nBarOuter {
+    min-width: 500px;
+    max-width: 1000px;
     display: flex;
     align-items: center;
     padding: 6px 10px; 
     font-size:smaller;
-    background-color: #0b1419;
+    background-color: rgb(11, 20, 25);
     color: #d4e3ea;
     line-height: 1.6;
     font-weight: 400;
@@ -28,12 +31,55 @@ div.nBarLogo {
     user-select: none;
 }
 
+.tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black;
+}
+  
+.tooltip .tooltiptext {
+    font-size: x-small;
+    visibility: hidden;
+    width: 380px;
+    background-color: rgba(6, 10, 15,.9);
+    text-align: center;
+    border-radius: 6px;
+    padding: 4px 4px;
+    position: absolute;
+    z-index: 1;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -190px;
+    color: #78909c;
+    opacity: 0;
+    transition: opacity .6s;
+}
+  
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+    
+}
+
+.flexBreak {
+    flex-basis: 100%;
+    height: 0;
+}
+
+.nBarStatusContainer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
 .color-pos {color: #00e676}
 .color-neg {color: #ff5252}
 .color-mid {color: #eeff41}
 .font-sub {color: #78909c; font-size: 90%;}
+.font-spaced {letter-spacing: .25em;}
+
 div.nBarStatus {
-    margin-left: 8px;
+    margin: 2px 4px;
     padding-left: 8px;
     min-height: 20px;
     border-left: 2px solid #98cee8;
@@ -55,3 +101,30 @@ div.nBarStatus {
  @keyframes scale-in-ver-top{0%{transform:scaleY(0);transform-origin:100% 0;opacity:1}100%{transform:scaleY(1);transform-origin:100% 0;opacity:1}}
  @keyframes slide-in-bck-top{0%{transform:translateZ(700px) translateY(-100px);opacity:0}100%{transform:translateZ(0) translateY(0);opacity:1}}
  @keyframes slide-out-bck-bottom{0%{transform:translateZ(0) translateY(0);opacity:1}100%{transform:translateZ(-1100px) translateY(1000px);opacity:0}}
+/* ------------------------------------------------------------------- */
+ 
+.loader {
+  height : 21px;
+  width  : 39px; /* (6 * <margin: 2px>) + (3 * <width: 8px>) */
+}
+
+.loader-box {
+  display                   : inline-block;
+  height                    : 21px;
+  width                     : 3px;
+  margin                    : 0px 5px;
+  background-color          : rgba(46,111,219,1);
+  animation-name            : fadeOutIn;
+  animation-duration        : 500ms;
+  animation-iteration-count : infinite;
+  animation-direction       : alternate;
+}
+
+.loader-box:nth-child(1) { animation-delay: 250ms; } /* (1/2) * <animation-duration: 500ms */
+.loader-box:nth-child(2) { animation-delay: 500ms; } /* (2/2) * <animation-duration: 500ms */
+.loader-box:nth-child(3) { animation-delay: 750ms; } /* (3/2) * <animation-duration: 500ms */
+
+@keyframes fadeOutIn {
+  0%   { background-color : rgba(46,111,219,1) }
+  100% { background-color : rgba(46,111,219,0)}
+}

@@ -18,10 +18,13 @@ declare namespace messenger.compose {
         body?: string
         cc?: ComposeRecipientList
         followUpto?: ComposeRecipientList
+        /** Added in TB 88 */
+        from?: ComposeRecipient
+
         /**
          * The ID of an identity from the `accounts` API. The settings from the identity will be used in the composed 
          * message. If `replyTo` is also specified, the `replyTo` property of the identity is overridden. The permission 
-         * accountsRead is required to include the identityId.
+         * `accountsRead` is required to include the identityId.
          */
         identityId?: string
         isPlainText?: boolean
@@ -30,6 +33,8 @@ declare namespace messenger.compose {
         replyTo?: ComposeRecipientList
         subject?: string
         to?: ComposeRecipientList
+        /** read only (added in TB 88) */
+        type?: 'draft' | 'new' | 'redirect' | 'reply' | 'forward'
     }
     /**
      * Open a new message compose window replying to a given message. If the provided ComposeDetails object does not 
@@ -66,7 +71,8 @@ declare namespace messenger.compose {
      * @param details (ComposeDetails)
      */
     function setComposeDetails(tabId:number, details:ComposeDetails)
-
+    /** Sends the message currently being composed under the given tab */
+    function sendMessage(tabId:number, options?:{mode: "default"|"sendNow"|"sendLater"} ) : Promise<boolean>
     /** on before send event
     */
     const onBeforeSend: EvListener<(tab:browser.tabs.Tab,details:ComposeDetails)=>{cancel:boolean,details:ComposeDetails} | Promise<any> >
@@ -78,10 +84,63 @@ declare namespace messenger.tabs {
     type WindowType = 
         "normal" | "popup" | "panel" | "app" | "devtools" | "addressBook" | 
         "messageCompose" | "messageDisplay"
+    type Tab = {
+        active: boolean,
+        highlighted: boolean,
+        index: number,
+        height?: number,
+        width?: number,
+        id?: number
+        mailTab?: boolean,
+        status?: 'loading' | 'complete',
+        title?: string,
+        type?: 'addressBook'|'calendar'|'calendarEvent'|'calendarTast'|'chat'|'content'|'mail'|'messageCompose'|'messageDisplay'|'special'|'tasks',
+        url?: string,
+        windowId?: number
+    }
 }
 
 declare namespace messenger.composeScripts {
     function register(composeScriptOptions)
+}
+declare namespace messenger.composeAction {
+    /** Has tabId or windowId or niether (for global) but not both */
+    type Details = {tabId?: number, windowId?:undefined} | {windowId?:number, tabId?:undefined}
+    /** color represented by RGBA values 0-255 */
+    type ColorArray = [number, number, number, number]
+    /** Sets the title of the composeAction. This shows up in the tooltop and the label. 
+     * Defaults to the add-on name. */
+    function setTitle(details:{title:string|null}&Details)
+    /** Gets the title of the composeAction */
+    function getTitle(details:Details) : Promise<string>
+    
+    function setLabel(details:{label:string|null}&Details)
+    function getLabel(details:Details) : Promise<string>
+
+    function setIcon(details: {
+        imageData?:ImageData,
+        /** relative path to icon */
+        path?:string
+    } & Details)
+
+    /** Sets the badge text for the composeAction. The badge is displayed on top of the icon */
+    function setBadgeText(details: {
+        /** Can fit ~4 characters in the badge */
+        text:string|null
+    } & Details)
+    function setBadgeBackgroundColor(details: {
+        /**css-string or 0-255 rgba array*/
+        color: string | ColorArray
+    } & Details)
+    function getBadgeBackgroundColor(details: Details): Promise<ColorArray>
+
+    function enable(tabId?: number)
+
+    function disable(tabId?: number)
+
+    function isEnabled(details: Details): Promise<boolean>
+
+
 }
 
 declare namespace messenger.messageDisplayScripts {

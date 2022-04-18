@@ -8,7 +8,7 @@
     "applications": {
         "gecko": {
             "id": "kurer@aonova.ddns.com",
-            "strict_min_version": "78.0"
+            "strict_min_version": "91.0"
         }
     },
     "background": {
@@ -24,13 +24,8 @@
         "default_title": "Kurer",
         "default_icon": "images/icon-32.png"
     },
-    "message_display_action": {
-        "default_popup": "read_popup.html",
-        "default_title": "Kurer",
-        "default_icon": "images/icon-32.png"
-    },
     "permissions": [
-        "storage", "compose", "messagesRead", "messagesModify", "activeTab", "tabs"
+        "storage", "compose", "compose.send", "messagesRead", "messagesModify", "activeTab", "tabs", "*://kurer.daneportal.net/*"
     ],
     "icons": {
         "64": "images/icon.png",
