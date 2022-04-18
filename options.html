@@ -4,12 +4,16 @@
   <head>
     <meta charset="utf-8"/>
     <title>Options</title>
+    <!-- jquery -->
+    <script src = "/res/jquery-3.6.0.min.js"></script>
+    <script src = "/res/select2.min.js"></script>
     <!-- FONT -->
     <link rel="stylesheet" href="css/font.css">
     <!-- CSS -->
     <link rel="stylesheet" href="css/normalize.css">
     <link rel="stylesheet" href="css/skeleton.css">
     <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/select2.min.css">
   </head>
 
   <body style="overflow:hidden;">
@@ -70,21 +74,27 @@
                 <span class="tooltiptext">If you want to use <span class="color-mid">two&nbsp;keys</span>: one for signing and another for decrypting</span>
               </div>
             </div>
-            <div class="hl-border-weak" style="margin-bottom:30px;">
+            <div id="privKey_section" class="hl-border-weak" style="margin-bottom:30px;">
               <h6 id="privKey_message">Key for decrypting and signing</h6>
-              <textarea class="browser-style centered pem-input" id="privateKey" placeholder="[Paste PEM text]"></textarea>
-              <br><br>
-              Key password<br>
-              <span style="font-size: x-small;" class="font-sub">Leave empty if your PKCS8 key above is not password encrypted</span>
-              <input type="password" class="browser-style centered pem-input" id="passcode"/>
+              <div class="box-file-input" style="display:flex; flex: row center; gap:5px;">
+                <input id="privKey" style="flex:1" type="file"/><div class="func_status_msg" style="font-size:xx-small; flex:1;"></div>
+              </div>
+              <div class="hl-border-weak" style="margin-left:30px; width: 85%;">
+                <div>Key password</div>
+                <span style="font-size: x-small;" class="font-sub">Leave empty if your PKCS8 key above is not password encrypted</span>
+                <input type="password" class="centered func_passcode" id="privKeyPasscode" />
+              </div>
             </div>
-            <div id="privKey2_section" class="hl-border-weak anim_scalein">
-              <h6 id="privKey2_message">Key for signing</h6>
-              <textarea class="browser-style centered pem-input" id="privateKey2" placeholder="[Paste PEM text]"></textarea>
-              <br><br>
-              Key password<br>
-              <span style="font-size: x-small;" class="font-sub">Leave empty if your PKCS8 key above is not password encrypted</span>
-              <input type="password" class="browser-style centered pem-input" id="passcode"/>
+            <div id="privKeySign_section" class="hl-border-weak anim_scalein">
+              <h6 id="privKeySign_message">Key for signing</h6>
+              <div class="box-file-input" style="display:flex; flex: row center; gap:5px;">
+                <input id="privKeySign" style="flex:1" type="file"/><div class="func_status_msg" style="font-size:xx-small; flex:1;"></div>
+              </div>
+              <div class="hl-border-weak" style="margin-left:30px; width: 85%;">
+                <div>Key password</div>
+                <span style="font-size: x-small;" class="font-sub">Leave empty if your PKCS8 key above is not password encrypted</span>
+                <input type="password" class="centered func_passcode" id="privKeySignPasscode"/>
+              </div>
             </div>
           </div>
           <div class="hl-border-strong" style="margin-top:20px;">
@@ -98,14 +108,14 @@
               <input type="url" class="browser-style centered pem-input" id="doh_server" placeholder="cloudflare-dns.com/dns-query"/>
               <span class="tooltiptext"><span class="color-mid">Note</span>: Kurer currently uses Cloudflare 1.1.1.1 HTTP GET JSON API, and will only work with compatible DoH resolvers.<br>Leave empty to use default. </span>
             </div>
-            
+
           </div>
           <div class="hl-border-strong" style="margin-top:20px;" hidden>
             <h6>Certificate sent with signatures</h6>
             <span style="font-size: x-small;">Leave empty to pull from DANE</span>
             <textarea class="browser-style centered pem-input" id="cert" placeholder="[Paste PEM text]"></textarea>
           </div>
-          
+
           <div class="hl-border-strong"  style="margin-top:20px;" hidden>
             <h6>Cache of known public keys</h6>
             For <b>debug</b> purposes you can modify a single entry
@@ -118,17 +128,16 @@
           </div>
 
           <!-- Save button -->
-          <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items:center;" >
+          <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items:center; gap:10px" >
             <button class="browser-style" style="height:95%" type="submit">Save</button>
-            <div class="hl-border-strong" style="display: flex; justify-content: left; align-items: center; justify-self: left; margin-left:10px; margin-right: 10px;"><input style="margin-right:10px;"type="checkbox" id="optSendStats" checked/>
-              <div id="telemetry_msg" class="tooltip noselect font-sub clickable-text" style="font-size:smaller;">Help&nbsp;make&nbsp;Kurer&nbsp;better&nbsp;by&nbsp;sending<br>anonymous&nbsp;statistics&nbsp;to&nbsp;the&nbsp;devs
-                <span class="tooltiptext">We send a one-time anonymous packet that only contains your toggled options under the <i>Composing messages</i> section along with a randomly generated client id when clicking <i>Save</i><br><br>No other data is sent</span>
+            <div class="hl-border-strong" style="display: flex; justify-content: left; align-items: center; gap:8px;"><input style="margin-right:10px;"type="checkbox" class="styled" id="optSendStats" disabled/>
+              <div id="telemetry_msg" class="noselect font-sub clickable-text" style="font-size:smaller;">Help&nbsp;make&nbsp;Kurer&nbsp;better&nbsp;by&nbsp;sending<br>anonymous&nbsp;statistics&nbsp;to&nbsp;the&nbsp;devs
             </div></div>
             <button style="justify-self:right;" style="height:95%" class="browser-style" type="reset">Reset</button>
           </div>
-            
 
-          
+
+
         </form>
     </div>
 
@@ -138,20 +147,76 @@
         </div>
     </div>
     <script src="scripts/options.js"></script>
-    
+
     <!-- User-study pitch modal -->
     <div id="user_study_modal" class="modal"><div class="modal-content-bottom">
       <div>
         <h2>Did you know?</h2>
         <p>Kurer is an <a href="https://github.com/gmu-msl/kurer-thunderbird">open-source project</a> and part of a study looking at <span class="color-pos-faint">cryptography designed for everyday people.</span></p>
-        <p><span class="font-sub">// participation / consent</span><br>
+        <p hidden><span class="font-sub">// participation / consent</span><br>
           <a class="font-sub" href="https://docs.google.com/spreadsheets/d/1qY9R_eCTKV1DBe04KIrUDQjwzXL9CngMCv3ANYzomvs/edit?usp=sharing"> // telemetry advanced details</a>
+        </p><br>
+        <p><span class="color-hl">You can help us make it more usable </span>by allowing Kurer to <span class="color-hl">securely</span> share <span class="color-hl">anonymous configuration (only)</span> statistics</p>
+        <div class="hl-border-weak" style="margin-top:10px;">
+        <p>
+          <span class="color-hl" style="font-size:smaller;">If you accept</span>, Kurer will share your preferred configuration choices anonymously. <span class="font-sub">(i.e., data containing the toggle options you set on the options page)</span> <br><br>This is only sent when clicking “Save”. <br><br>
+          <i class="font-sub">Kurer will never track any email activity when reading or composing emails.<br>Kurer will also never send any other written input fields such as your keys or passwords, etc.<br>You are free to decline and continue to use Kurer without any restrictions</i>
         </p>
-      </div>
-      <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items:center;">
+      </div></div>
+      <div style="margin-top: 15px; margin-bottom:20px; display: flex; justify-content: space-between; align-items:center; gap:10px;">
         <button id="ustud_yes_btn" class="browser-style button btn-green" style="height:95%" type="button" >Accept</button>
-        <button id="ustud_no_btn" style="justify-self:right;" style="height:95%" class="browser-style button btn-red" type="reset">No Thanks</button>
+        <div id="ustud_msg" style="text-align: center; font-size: smaller;">
+            placeholder
+        </div>
+        <button id="ustud_no_btn" style="height:95%" class="browser-style button btn-red" type="button">No Thanks</button>
+      </div>
+      <div id="ustud_survey_section" class="hl-border-strong" style="display:none; margin-top:0px; margin-bottom:0px; padding-bottom:25px; background-color:#070e11;">
+        <h4 class="color-pos-faint">Can you tell us a bit about yourself? <span class="font-sub" style="font-size:small">(optional)</span></h4>
+        <div style="margin-top:15px">
+          <p>Please select your age bracket</p>
+          <div class="hl-border-weak" style="margin-top:15px"><select  style="width:80%" id="ust_age" name="ages">
+            <option value="" selected>Prefer not to answer</option>
+          </select></div>
+        </div>
+        <div style="margin-top:15px">
+          <p>Please select your country of residence</p>
+          <div class="hl-border-weak" style="margin-top:15px"><select style="width:80%" id="ust_country" name="countries">
+            <option value="" selected>Prefer not to answer</option>
+          </select></div>
+        </div>
+        <div style="margin-top:15px">
+          <p>Please select the category which best describes your occupation</p>
+          <div class="hl-border-weak" style="margin-top:15px"><select style="width:80%;" id="ust_occupation" name="occupations">
+            <option value="" selected>Prefer not to answer</option>
+            <option value="other">Other: <span class="font-sub">describe below</span></option>
+          </select>
+          <input id="ust_occupation_other" type="text" style="width:60%; margin-left:50px; margin-top:10px; opacity: 10%;" disabled placeholder="Other..." class="browser-style"/>
+        </div>
+
+        </div>
       </div>
     </div></div>
+    <!-- Decline prompt -->
+    <div id="confirm_decline_modal" class="modal"><div class="modal-content-bottom" style="border-color:lightcoral">
+      <div>
+        <h2 style="color:lightcoral">Confirmation</h2>
+        <p>Are you sure you would like to stop sharing config statistics?</p>
+        <div class="hl-border-weak" style="margin-top:10px;"><p>
+          <span class="color-hl">If you click "Yes"</span>, Kurer will stop sharing your preferred configuration choices. <span class="font-sub">(i.e., data containing the toggle options you set on the options page)</span> - no further data will be sent<br><br>
+          <i class="font-sub">You can rejoin the data sharing offer from the options page at any time.<br>In any case, you can continue to use Kurer without any restrictions</i>
+        </p><br>
+        <div class="hl-border-strong" style="gap:10px; display: flex; align-items: center; margin-left:10px; margin-right: 10px;"><input class="styled" style="margin-right:10px" type="checkbox" id="opt_remove_all_data" />
+          <div id="telemetry_msg" class="tooltip noselect">Remove&nbsp;all&nbsp;collected&nbsp;data
+            <span class="tooltiptext">This will remove all the anonymous configuration data previously collected from your current installation of Kurer</span>
+        </div></div>
+      </div>
+      <div style="margin-top: 15px; display: flex; justify-content: center; gap:16px; align-items:center;">
+        <button id="confirm_yes_btn" class="browser-style button btn-red" style="height:95%" type="button" >Yes</button>
+        <button id="confirm_no_btn" style="height:95%" class="browser-style button" type="button">Go Back</button>
+      </div>
+
+      </div>
+    </div>
+  </div>
   </body>
 </html>

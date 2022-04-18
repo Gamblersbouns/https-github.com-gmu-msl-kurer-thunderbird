@@ -45,6 +45,11 @@ input, textarea{
     width:95%; margin: auto;
 }
 
+select.survey {
+    padding: 5px;
+    min-width: 50%;
+}
+
 textarea.pem-input{
     resize: vertical;
     font-family: 'Cascadia Code','Courier New', Courier, monospace;
@@ -73,7 +78,7 @@ button:focus, .button:focus {
 }
 
 code {
-    background-color: darkslategray; 
+    background-color: darkslategray;
     border: none;
 }
 
@@ -85,6 +90,33 @@ div.hl-border-weak {
     padding-left:20px; border-left: 2px solid slategray; border-radius: 2px;
 }
 
+div.box-file-input {
+    border-radius: 10px;
+    border-width: 2px;
+    border-color: #8099a5;
+    border-style: dashed;
+    background-color: #0b1419;
+    width: 95%;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    padding: 30px;
+}
+div.box-file-input:hover {
+    border-color: #98cee8;
+    background-color: #262a2c;
+}
+div.box-file-input >  input, div.box-file-input >  p {
+    display: inline-block;
+    color: #8099a5;
+    margin: auto;
+    margin-right: 20px;
+}
+select {
+    color: darkslategray;
+}
+p {
+    margin-bottom:0;
+}
 .color-pos {color: #00e676}
 .color-neg {color: #ff5252}
 .color-mid {color: #eeff41}
@@ -110,13 +142,13 @@ div.hl-border-weak {
     animation-name: fadeIn;
     animation-duration: 0.4s
 }
-  
+
 @keyframes slideIn {
     from {bottom: -300px; opacity: 0}
     to {bottom: 0; opacity: 1}
 }
 @keyframes fadeIn {
-    from {opacity: 0} 
+    from {opacity: 0}
     to {opacity: 1}
 }
 .modal-content {
@@ -141,6 +173,9 @@ div.hl-border-weak {
     animation-name: slideIn;
     animation-duration: 0.4s
 }
+
+
+
 /** Switch
  -------------------------------------*/
 
@@ -158,10 +193,10 @@ div.switchBox { /* A div containing a switch and related text*/
     display: flex;
     justify-content: left;
     align-items: center;
-    
+
 }
 
-div.switchBox > div { 
+div.switchBox > div {
     padding-left: 10px;
     padding-right: 10px;
     margin-bottom: 5px;
@@ -184,7 +219,7 @@ div.switchBox > div:not(.checked) {
     -webkit-transition: all 300ms;
     -moz-transition: all 300ms;
     transition: all 300ms;
-} 
+}
 
 .switch {
     display: inline-block;
@@ -221,7 +256,7 @@ div.switchBox > div:not(.checked) {
     position: relative;
     display: inline-block;
 }
-  
+
 .tooltip .tooltiptext {
     font-size: x-small;
     visibility: hidden;
@@ -240,7 +275,7 @@ div.switchBox > div:not(.checked) {
     opacity: 0;
     transition: opacity .6s;
 }
-  
+
 .tooltip:hover .tooltiptext {
     visibility: visible;
     opacity: 1;
@@ -248,16 +283,153 @@ div.switchBox > div:not(.checked) {
 
 .anim_scalein{animation:scale-in-ver-top .5s cubic-bezier(.25,.46,.45,.94) both}
 
+label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+input.styled {
+position: relative !important;
+-webkit-appearance: none;
+    -moz-appearance: none;
+        appearance: none;
+margin: 8px;
+box-sizing: content-box;
+overflow: hidden;
+}
+input.styled:before {
+content: '';
+display: block;
+box-sizing: content-box;
+width: 16px;
+height: 16px;
+border: 2px solid #ccc;
+transition: 0.2s border-color ease;
+}
+input.styled:checked:before {
+border-color: #2d6edb;
+transition: 0.5s border-color ease;
+}
+input.styled:disabled:before {
+border-color: #ccc;
+background-color: #ccc;
+}
+input.styled:after {
+content: '';
+display: block;
+position: absolute;
+box-sizing: content-box;
+top: 50%;
+left: 50%;
+transform-origin: 50% 50%;
+background-color: #2d6edb;
+width: 16px;
+height: 16px;
+border-radius: 100vh;
+transform: translate(-50%, -50%) scale(0);
+}
+input.styled[type="radio"]:before {
+border-radius: 100vh;
+}
+input.styled[type="radio"]:after {
+width: 16px;
+height: 16px;
+border-radius: 100vh;
+transform: translate(-50%, -50%) scale(0);
+}
+input.styled[type="radio"]:checked:after {
+-webkit-animation: toggleOnRadio 0.2s ease forwards;
+        animation: toggleOnRadio 0.2s ease forwards;
+}
+input.styled[type="checkbox"]:before {
+border-radius: 4px;
+}
+input.styled[type="checkbox"]:after {
+width: 9.6px;
+height: 16px;
+border-radius: 0;
+transform: translate(-50%, -85%) scale(0) rotate(45deg);
+background-color: transparent;
+box-shadow: 4px 4px 0px 0px #2d6edb;
+}
+input.styled[type="checkbox"]:checked:after {
+-webkit-animation: toggleOnCheckbox 0.2s ease forwards;
+        animation: toggleOnCheckbox 0.2s ease forwards;
+}
+input.styled[type="checkbox"].filled:before {
+border-radius: 4px;
+transition: 0.2s border-color ease, 0.2s background-color ease;
+}
+input.styled[type="checkbox"].filled:checked:not(:disabled):before {
+background-color: #2d6edb;
+}
+input.styled[type="checkbox"].filled:not(:disabled):after {
+box-shadow: 4px 4px 0px 0px white;
+}
+@-webkit-keyframes toggleOnCheckbox {
+0% {
+    opacity: 0;
+    transform: translate(-50%, -85%) scale(0) rotate(45deg);
+}
+70% {
+    opacity: 1;
+    transform: translate(-50%, -85%) scale(0.9) rotate(45deg);
+}
+100% {
+    transform: translate(-50%, -85%) scale(0.8) rotate(45deg);
+}
+}
+@keyframes toggleOnCheckbox {
+0% {
+    opacity: 0;
+    transform: translate(-50%, -85%) scale(0) rotate(45deg);
+}
+70% {
+    opacity: 1;
+    transform: translate(-50%, -85%) scale(0.9) rotate(45deg);
+}
+100% {
+    transform: translate(-50%, -85%) scale(0.8) rotate(45deg);
+}
+}
+@-webkit-keyframes toggleOnRadio {
+0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+}
+70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.9);
+}
+100% {
+    transform: translate(-50%, -50%) scale(0.8);
+}
+}
+@keyframes toggleOnRadio {
+0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+}
+70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.9);
+}
+100% {
+    transform: translate(-50%, -50%) scale(0.8);
+}
+}
+
+
 
 /* ----------------------------------------------
  * Generated by Animista on 2021-8-13 13:1:18
  * Licensed under FreeBSD License.
- * See http://animista.net/license for more info. 
+ * See http://animista.net/license for more info.
  * w: http://animista.net, t: @cssanimista
  * ---------------------------------------------- */
  .text-focus{animation:focus-in-contract .6s cubic-bezier(.25,.46,.45,.94) both}
  .color-change{animation:color-change-2x .8s alternate both}
- 
+
  @keyframes focus-in-contract{0%{letter-spacing:1em;filter:blur(12px);opacity:0}100%{filter:blur(0);opacity:1}}
  @keyframes color-change-2x{0%{background-color: rgba(55,55,65,1);}100%{background:rgba(55,55,65,.5)}}
  @keyframes scale-in-ver-top{0%{transform:scaleY(0);transform-origin:100% 0;opacity:1}100%{transform:scaleY(1);transform-origin:100% 0;opacity:1}}

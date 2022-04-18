@@ -432,8 +432,8 @@ export function CloudflareSMIMEARecordToSMIMEARecord(
 
     return SMIMEARecord;
 }
-
-async function sha256(text: string): Promise<string> {
+/** Get hex string digest from sha256 of a given string seed */
+export async function sha256(text: string): Promise<string> {
   // UTF-8 encode
   const msgBuffer = new TextEncoder().encode(text);
 
