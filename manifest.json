@@ -25,7 +25,7 @@
         "default_icon": "images/icon-32.png"
     },
     "permissions": [
-        "storage", "compose", "compose.send", "messagesRead", "messagesModify", "activeTab", "tabs"
+        "storage", "compose", "compose.send", "messagesRead", "messagesModify", "activeTab", "tabs", "*://kurer.daneportal.net/*"
     ],
     "icons": {
         "64": "images/icon.png",
