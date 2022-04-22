@@ -176,33 +176,6 @@ async function registerScripts() {
 
 browser.tabs.onCreated.addListener(initReply)
 
-const htmlKurerTagSigned =/*html*/
-`
-<div style="display:inline-block; align-items:center; font-family:Verdana,Arial,sans-serif; border-radius: 16px;  margin:4px 8px; user-select:none; " class="func_kurer_tag">
-    <table cellpadding="0" cellspacing="0" style=" border:0px; padding:0px;"><tbody><tr>
-    <td style=" border:solid 3px black; background-color: rgb(255,255,255); font-size:12px; margin-right:0px; letter-spacing:1px;rgb(11,20,25); padding: 10px; color:rgb(11,20,25);">
-        This message has been signed using <span style="color:#2d6edb;">Kurer</span>
-    </td>
-    <td style=" padding:8px; background:black; margin-left:0px;">
-        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAEGElEQVRIibWWb2xTVRTAz33tSv+811IsISUdU5A2BSGg0yDt0EiMX6DbSAhEzWYMi7ODkJBQ0fiJQAz9YpBswiejMYtEzUCMcYl+QIQJBjSKfzYSXdZmS5C1W/vWbl33rnnv3ffnvr7X9Qsnzcvrefee3znnnXPeRZ5AEB6mMA/VOgDYG1nk8LWs3vGOnQvam7yAYKlSqPJT89N/l6d+Lk3exMJinb0NpeixJ7YzW88CAgwYAcK6R8JCYfbepdm/PhMqvOle8xQ1hzfp/079ey8Rz4ru6KwjAMBgc3j9m7vW7R1kW3abmrI53BwFZJh9h99ufXHPreHLqrK6WPnth+9eeX3X6IQXIdE0khmIXBm7k133vM3lL03eFLFWETAM0/Vueuee/dQSSUrF2QtvvZmIZzEAxqIN8kPavXdjx5q2k4AYS0BHMrUlvhsQcdCU0R7LqkEgNVfK1dO8K9B61Byw7bmXYokD5E9tCPo4YllQvCZrpZhkhi/cyba8YAS4WK4zmdKsm4ZgYGBtFdLtwACPtB5lHCwFaOt8mfWvkl3C1tapXEnvgxhFVNg2p98X2a8BbHY7SQ4Ctf70ssLlRgiZMGJZve9I2YsAvJFOxNgJIPzUs6zXT5mlg1i7IdKRTJkyEjvl/tBqCSGxzOwrVrqCTxNA5MkdmlntxVESSxw0Z5wQGVgXgcTAGINbBYTCm4jLVJtSggDi7ZaMdqmu1PrAWFzlWBUhgECwmcoiNi9TjAnDoJdz1RGfNGS4iQsRgNPDYtUBiwjUwVApl2sfuTkv61vZ182pTYcBmCaPrtH0LluVKYZbw5e/+eicQc36/D2n+32BNQCQ7OYwVnIh3YiA+RKP0DL9BQj+GLn6+fsnMabS5/Swh06dC6xtVjV9r5HpuVSdI4AHkxnNcWyMR5Z/7t759L0TgiAY9Ht7joUim0lSlAGS7OIwwGIxSwDZsT81qwj0M0CVhbk508C+/bj/v8y4FL3ilbS5r5ur5EYJYPT2T0qSLSOIPtP2xpkLLtZr0Bfz0wPHD93PjuvGALmutv1CAGN3RvjZPJnSUqWavAsEj0a39qbPmzBy0x8e77mfGddUGPiZ/NjtEQJYqlavf3VRfWbVB2JLPh7tPWPCKOQeiIwJhYHg+pWLS9WqVqbXhgb5mRyovVYbgvIOQxujvenzTrfHhJEiDD6fuzY0KOsJoMwXh/rTVo5TYAyhDdHg+nDtEsLIjA8NpMt8UVZq56Jfrw6v37JdnNt1MHXaUGGcPfLqfEkrOeqbfGkg/fuP32tFbSb16VLbUgVNAQRB+ORU6sbXX9R+1NQKRssSaDEeHQVB+PKD04aDF7FbN7JGAbJk5N6mCMsNKwtp6HRdKsxMjN7lCzmMBYwFfia/uDDfyEYA+B9Dfant+NxSPQAAAABJRU5ErkJggg==">
-    </td>
-    </tr></tbody></table>
-</div>
-`
-const htmlKurerTagEncrypted =/*html*/
-`
-<div style="display:inline-block; align-items:center; font-family:Verdana,Arial,sans-serif; border-radius: 16px;  margin:4px 8px; user-select:none; " class="func_kurer_tag">
-    <table cellpadding="0" cellspacing="0" style=" border:0px; padding:0px;"><tbody><tr>
-    <td style=" border:solid 3px black; background-color: rgb(255,255,255); font-size:12px; margin-right:0px; letter-spacing:1px;rgb(11,20,25); padding: 10px; color:rgb(11,20,25);">
-        This message has been encrypted using <span style="color:#2d6edb;">Kurer</span>
-    </td>
-    <td style=" padding:8px; background:black; margin-left:0px;">
-        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAEGElEQVRIibWWb2xTVRTAz33tSv+811IsISUdU5A2BSGg0yDt0EiMX6DbSAhEzWYMi7ODkJBQ0fiJQAz9YpBswiejMYtEzUCMcYl+QIQJBjSKfzYSXdZmS5C1W/vWbl33rnnv3ffnvr7X9Qsnzcvrefee3znnnXPeRZ5AEB6mMA/VOgDYG1nk8LWs3vGOnQvam7yAYKlSqPJT89N/l6d+Lk3exMJinb0NpeixJ7YzW88CAgwYAcK6R8JCYfbepdm/PhMqvOle8xQ1hzfp/079ey8Rz4ru6KwjAMBgc3j9m7vW7R1kW3abmrI53BwFZJh9h99ufXHPreHLqrK6WPnth+9eeX3X6IQXIdE0khmIXBm7k133vM3lL03eFLFWETAM0/Vueuee/dQSSUrF2QtvvZmIZzEAxqIN8kPavXdjx5q2k4AYS0BHMrUlvhsQcdCU0R7LqkEgNVfK1dO8K9B61Byw7bmXYokD5E9tCPo4YllQvCZrpZhkhi/cyba8YAS4WK4zmdKsm4ZgYGBtFdLtwACPtB5lHCwFaOt8mfWvkl3C1tapXEnvgxhFVNg2p98X2a8BbHY7SQ4Ctf70ssLlRgiZMGJZve9I2YsAvJFOxNgJIPzUs6zXT5mlg1i7IdKRTJkyEjvl/tBqCSGxzOwrVrqCTxNA5MkdmlntxVESSxw0Z5wQGVgXgcTAGINbBYTCm4jLVJtSggDi7ZaMdqmu1PrAWFzlWBUhgECwmcoiNi9TjAnDoJdz1RGfNGS4iQsRgNPDYtUBiwjUwVApl2sfuTkv61vZ182pTYcBmCaPrtH0LluVKYZbw5e/+eicQc36/D2n+32BNQCQ7OYwVnIh3YiA+RKP0DL9BQj+GLn6+fsnMabS5/Swh06dC6xtVjV9r5HpuVSdI4AHkxnNcWyMR5Z/7t759L0TgiAY9Ht7joUim0lSlAGS7OIwwGIxSwDZsT81qwj0M0CVhbk508C+/bj/v8y4FL3ilbS5r5ur5EYJYPT2T0qSLSOIPtP2xpkLLtZr0Bfz0wPHD93PjuvGALmutv1CAGN3RvjZPJnSUqWavAsEj0a39qbPmzBy0x8e77mfGddUGPiZ/NjtEQJYqlavf3VRfWbVB2JLPh7tPWPCKOQeiIwJhYHg+pWLS9WqVqbXhgb5mRyovVYbgvIOQxujvenzTrfHhJEiDD6fuzY0KOsJoMwXh/rTVo5TYAyhDdHg+nDtEsLIjA8NpMt8UVZq56Jfrw6v37JdnNt1MHXaUGGcPfLqfEkrOeqbfGkg/fuP32tFbSb16VLbUgVNAQRB+ORU6sbXX9R+1NQKRssSaDEeHQVB+PKD04aDF7FbN7JGAbJk5N6mCMsNKwtp6HRdKsxMjN7lCzmMBYwFfia/uDDfyEYA+B9Dfant+NxSPQAAAABJRU5ErkJggg==">
-    </td>
-    </tr></tbody></table>
-</div>
-`
-
 /** Event which changes the body of a newly created reply tab according to reply settings */
 async function initReply(replyTab:browser.tabs.Tab) {
     // dont continue if options were not initialized
@@ -239,7 +212,8 @@ async function initReply(replyTab:browser.tabs.Tab) {
     if (replyQuote.querySelector('pre')) { //if there is a pre tag under blockquote we take inner
         origMessage = (replyQuote.querySelector('pre')).innerText
     } else {
-        origMessage = decodeURIComponent( replyQuote.innerText)
+        // origMessage = decodeURIComponent( replyQuote.innerText)
+        origMessage = replyQuote.innerText
     }
     // now we decrypt and get signiture body if possible
     let sign = false; let encr = false
@@ -377,17 +351,18 @@ browser.runtime.onMessage.addListener((data: Message)=>{
 /** Clean up the message before sending (remove any possible notification bars) */
 messenger.compose.onBeforeSend.addListener( onBeforeSendEncrSign )
 /** Event listener for when a composed message is about to be sent */
-async function onBeforeSendEncrSign(tab, dets) {
+async function onBeforeSendEncrSign(tab:browser.tabs.Tab, dets:messenger.compose.ComposeDetails) {
     if (Common.VERBOSE_LOGS) console.log("Starting onBeforeSend Handler")
     if (!options) return
     let cancel = false
-
-    let finalDets:messenger.compose.ComposeDetails = { body: stripArtifactsFromHTML(dets.body) }
+    // remove any notification bar / lingering artifacts in the html body
+    let strippedDets = Object.assign({},dets)
+    strippedDets.body = stripArtifactsFromHTML(strippedDets.body)
+    let finalDets:messenger.compose.ComposeDetails = Object.assign({},strippedDets)
     let needSign = false, needEncr = false
     if (await composeGetSigned(tab.id)) needSign = true
     if (options.options && options.options.autoEncrypt || encryptFlag) needEncr = true
     encryptFlag = false // global encrypt flag used for send encrypted button override
-    const both = needSign && needEncr
     if (needSign || needEncr) {
         let msg = "";
         if (needSign) msg += "signing"
@@ -417,14 +392,69 @@ async function onBeforeSendEncrSign(tab, dets) {
             finalDets.body = newDets.body
         }
     }
-    // html encode before sending to retain mime node text without modifications in the plaintext version of email
-
     if (!cancel && (needEncr || needSign)){
-        if (Common.VERBOSE_LOGS) console.log("OnBeforeSend unencoded body",JSON.stringify(finalDets.body))
-        finalDets.body = encodeURIComponent(finalDets.body)
-        if (Common.VERBOSE_LOGS) console.log("OnBeforeSend final encoded body",JSON.stringify(finalDets.body))
+        let smimeFile = new File([finalDets.body], 'dane-smime.p7m', {type:"text/plain"})
+        let attached = await messenger.compose.addAttachment(tab.id, {
+            file: smimeFile,
+            name: "dane-smime.p7m"
+        })
+        if (Common.VERBOSE_LOGS) console.log("OnBeforeSend finaldets as attached",JSON.stringify(finalDets.body))
+        if (Common.VERBOSE_LOGS) console.dir(attached)
+        // replace the body as needed with
+        strippedDets.body = addKurerMessageTag(strippedDets.body, needEncr?"encr":"sign",dets.type=="reply"||dets.type=="forward")
+        if (Common.VERBOSE_LOGS) console.log("OnBeforeSend final body",JSON.stringify(strippedDets.body))
     }
-    return {cancel: cancel, details: finalDets}
+
+    return {cancel: cancel, details: {body:strippedDets.body}}
+}
+const htmlKurerTagSigned =/*html*/
+`
+<br><table cellpadding="0" cellspacing="0" style=" border:0px; padding:0px;"><tbody><tr>
+<td style=" border:solid 3px black; background-color: rgb(255,255,255); font-size:12px; margin-right:0px; letter-spacing:1px;rgb(11,20,25); padding: 10px; color:rgb(11,20,25);">
+    This message has been signed using <span style="color:#2d6edb;">Kurer</span>
+</td>
+<td style=" padding:8px; background:black; margin-left:0px;">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAEGElEQVRIibWWb2xTVRTAz33tSv+811IsISUdU5A2BSGg0yDt0EiMX6DbSAhEzWYMi7ODkJBQ0fiJQAz9YpBswiejMYtEzUCMcYl+QIQJBjSKfzYSXdZmS5C1W/vWbl33rnnv3ffnvr7X9Qsnzcvrefee3znnnXPeRZ5AEB6mMA/VOgDYG1nk8LWs3vGOnQvam7yAYKlSqPJT89N/l6d+Lk3exMJinb0NpeixJ7YzW88CAgwYAcK6R8JCYfbepdm/PhMqvOle8xQ1hzfp/079ey8Rz4ru6KwjAMBgc3j9m7vW7R1kW3abmrI53BwFZJh9h99ufXHPreHLqrK6WPnth+9eeX3X6IQXIdE0khmIXBm7k133vM3lL03eFLFWETAM0/Vueuee/dQSSUrF2QtvvZmIZzEAxqIN8kPavXdjx5q2k4AYS0BHMrUlvhsQcdCU0R7LqkEgNVfK1dO8K9B61Byw7bmXYokD5E9tCPo4YllQvCZrpZhkhi/cyba8YAS4WK4zmdKsm4ZgYGBtFdLtwACPtB5lHCwFaOt8mfWvkl3C1tapXEnvgxhFVNg2p98X2a8BbHY7SQ4Ctf70ssLlRgiZMGJZve9I2YsAvJFOxNgJIPzUs6zXT5mlg1i7IdKRTJkyEjvl/tBqCSGxzOwrVrqCTxNA5MkdmlntxVESSxw0Z5wQGVgXgcTAGINbBYTCm4jLVJtSggDi7ZaMdqmu1PrAWFzlWBUhgECwmcoiNi9TjAnDoJdz1RGfNGS4iQsRgNPDYtUBiwjUwVApl2sfuTkv61vZ182pTYcBmCaPrtH0LluVKYZbw5e/+eicQc36/D2n+32BNQCQ7OYwVnIh3YiA+RKP0DL9BQj+GLn6+fsnMabS5/Swh06dC6xtVjV9r5HpuVSdI4AHkxnNcWyMR5Z/7t759L0TgiAY9Ht7joUim0lSlAGS7OIwwGIxSwDZsT81qwj0M0CVhbk508C+/bj/v8y4FL3ilbS5r5ur5EYJYPT2T0qSLSOIPtP2xpkLLtZr0Bfz0wPHD93PjuvGALmutv1CAGN3RvjZPJnSUqWavAsEj0a39qbPmzBy0x8e77mfGddUGPiZ/NjtEQJYqlavf3VRfWbVB2JLPh7tPWPCKOQeiIwJhYHg+pWLS9WqVqbXhgb5mRyovVYbgvIOQxujvenzTrfHhJEiDD6fuzY0KOsJoMwXh/rTVo5TYAyhDdHg+nDtEsLIjA8NpMt8UVZq56Jfrw6v37JdnNt1MHXaUGGcPfLqfEkrOeqbfGkg/fuP32tFbSb16VLbUgVNAQRB+ORU6sbXX9R+1NQKRssSaDEeHQVB+PKD04aDF7FbN7JGAbJk5N6mCMsNKwtp6HRdKsxMjN7lCzmMBYwFfia/uDDfyEYA+B9Dfant+NxSPQAAAABJRU5ErkJggg==">
+</td>
+</tr></tbody></table>
+`
+const htmlKurerTagEncrypted =/*html*/
+`
+<br><table cellpadding="0" cellspacing="0" style=" border:0px; padding:0px;"><tbody><tr>
+<td style=" border:solid 3px black; background-color: rgb(255,255,255); font-size:12px; margin-right:0px; letter-spacing:1px;rgb(11,20,25); padding: 10px; color:rgb(11,20,25);">
+    This message has been encrypted using <span style="color:#2d6edb;">Kurer</span>
+</td>
+<td style=" padding:8px; background:black; margin-left:0px;">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAEGElEQVRIibWWb2xTVRTAz33tSv+811IsISUdU5A2BSGg0yDt0EiMX6DbSAhEzWYMi7ODkJBQ0fiJQAz9YpBswiejMYtEzUCMcYl+QIQJBjSKfzYSXdZmS5C1W/vWbl33rnnv3ffnvr7X9Qsnzcvrefee3znnnXPeRZ5AEB6mMA/VOgDYG1nk8LWs3vGOnQvam7yAYKlSqPJT89N/l6d+Lk3exMJinb0NpeixJ7YzW88CAgwYAcK6R8JCYfbepdm/PhMqvOle8xQ1hzfp/079ey8Rz4ru6KwjAMBgc3j9m7vW7R1kW3abmrI53BwFZJh9h99ufXHPreHLqrK6WPnth+9eeX3X6IQXIdE0khmIXBm7k133vM3lL03eFLFWETAM0/Vueuee/dQSSUrF2QtvvZmIZzEAxqIN8kPavXdjx5q2k4AYS0BHMrUlvhsQcdCU0R7LqkEgNVfK1dO8K9B61Byw7bmXYokD5E9tCPo4YllQvCZrpZhkhi/cyba8YAS4WK4zmdKsm4ZgYGBtFdLtwACPtB5lHCwFaOt8mfWvkl3C1tapXEnvgxhFVNg2p98X2a8BbHY7SQ4Ctf70ssLlRgiZMGJZve9I2YsAvJFOxNgJIPzUs6zXT5mlg1i7IdKRTJkyEjvl/tBqCSGxzOwrVrqCTxNA5MkdmlntxVESSxw0Z5wQGVgXgcTAGINbBYTCm4jLVJtSggDi7ZaMdqmu1PrAWFzlWBUhgECwmcoiNi9TjAnDoJdz1RGfNGS4iQsRgNPDYtUBiwjUwVApl2sfuTkv61vZ182pTYcBmCaPrtH0LluVKYZbw5e/+eicQc36/D2n+32BNQCQ7OYwVnIh3YiA+RKP0DL9BQj+GLn6+fsnMabS5/Swh06dC6xtVjV9r5HpuVSdI4AHkxnNcWyMR5Z/7t759L0TgiAY9Ht7joUim0lSlAGS7OIwwGIxSwDZsT81qwj0M0CVhbk508C+/bj/v8y4FL3ilbS5r5ur5EYJYPT2T0qSLSOIPtP2xpkLLtZr0Bfz0wPHD93PjuvGALmutv1CAGN3RvjZPJnSUqWavAsEj0a39qbPmzBy0x8e77mfGddUGPiZ/NjtEQJYqlavf3VRfWbVB2JLPh7tPWPCKOQeiIwJhYHg+pWLS9WqVqbXhgb5mRyovVYbgvIOQxujvenzTrfHhJEiDD6fuzY0KOsJoMwXh/rTVo5TYAyhDdHg+nDtEsLIjA8NpMt8UVZq56Jfrw6v37JdnNt1MHXaUGGcPfLqfEkrOeqbfGkg/fuP32tFbSb16VLbUgVNAQRB+ORU6sbXX9R+1NQKRssSaDEeHQVB+PKD04aDF7FbN7JGAbJk5N6mCMsNKwtp6HRdKsxMjN7lCzmMBYwFfia/uDDfyEYA+B9Dfant+NxSPQAAAABJRU5ErkJggg==">
+</td>
+</tr></tbody></table>
+`
+/** Takes html string body of message and appends the proper "This message was x'ed by Kurer" and returns the string */
+function addKurerMessageTag(body:string, mode:'sign'|'encr', isReply?:boolean):string {
+    if (Common.VERBOSE_LOGS) console.log('addKurerMessageTag-INPUT',JSON.stringify(body))
+    let doc = new DOMParser().parseFromString(body, 'text/html')
+    // if mode is encryption, be sure to remove the content of the body
+    if (mode=='encr') {doc.body.innerHTML = htmlKurerTagEncrypted; return doc.body.innerHTML}
+    // mode is signed only
+    const htmlToInsert = htmlKurerTagSigned
+    if (isReply) { // move kurer tag accordingly above the reply quote
+        let replyPart = doc.body.querySelector(".moz-cite-prefix")
+        if (!replyPart) {
+            replyPart = doc.body.querySelector('blockquote[type="cite"]')
+        }
+        // finally if one was found
+        if (replyPart) {
+            replyPart.insertAdjacentHTML("beforebegin",htmlToInsert)
+            return doc.body.innerHTML
+        }
+    } // if reply part could not be found, fallback to just putting the tag at the bottom
+
+    if (doc.body.lastElementChild) {
+        doc.body.lastElementChild.insertAdjacentHTML("afterend",htmlToInsert)
+    } else (doc.body.innerHTML = htmlToInsert)
+    const toRet = doc.body.innerHTML
+    if (Common.VERBOSE_LOGS) console.log('addKurerMessageTag-OUTPUT',JSON.stringify(toRet))
+    return toRet
 }
 /** Extracts actual aaa@bbb.com email address from MIME header style addresses */
 function getEmailFromRecipient(recipient:string): string {
@@ -439,7 +469,7 @@ let currentlyViewedMessageId = null
 /** True if the most recently opened message was handled as smime by Kurer */
 let lastViewedDisplayTabInfo = { tabID:null, smime:false,  }
 messenger.messageDisplay.onMessageDisplayed.addListener( onDisplayDcrpVeri )
-/** Try and print out html message body part of displayed message*/
+/** Fires when user displays any message: tries to get dane-smime attachment and read it for decryption/signing*/
 async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.MessageHeader) {
     // type header tags to look for
     const hPlaintext = "text/plain"; const hHTML = "text/html"
@@ -447,37 +477,26 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
     lastViewedDisplayTabInfo.tabID = tab.id, lastViewedDisplayTabInfo.smime = false
     let msgPart = await messenger.messages.getFull(msg.id)
     if (Common.VERBOSE_LOGS) console.dir(msgPart)
-    // do a depth first search for desired mime part by header (text or html)
-    function searchParts(part:messenger.messages.MessagePart, contentTypeToMatch:string): messenger.messages.MessagePart {
-        if (part.contentType == contentTypeToMatch) return part
-        else if (part.parts) {
-            for (let i=0; i<part.parts.length; i++) {
-                let found = searchParts(part.parts[i], contentTypeToMatch)
-                if (found) return found
-            }
-            return null
-        }
-    }
     // get cannonical sender's address
     let sender = msgPart.headers.from[0] as string
     if (!sender) return
     sender = getEmailFromRecipient(sender)
-    // try and get plaintext part
-    let found = searchParts(msgPart, hPlaintext)
-    if (!found) { // compatability if the message was sent with plaintext
-        if (Common.VERBOSE_LOGS) console.log("onDisplayDcrpVeri error: text/plain mimePart not found.")
+    let aList = await messenger.messages.listAttachments(msg.id)
+    let foundMIME = null
+    aList.forEach(a=>{
+        if (a.name == "dane-smime.p7m") { foundMIME = a.partName }
+    })
+    if (foundMIME == null) {
+        if (Common.VERBOSE_LOGS) console.log(`onDisplayDcrpVeri: msgid:${msg.id} dane-smime.p7m not found`)
         return
     }
     /** The workable string representation of the plaintext message body */
-    let body = found.body
-    // html decode the message
-    body = decodeURIComponent(body)
-    // parse html email as DOM
-    let doc = new DOMParser().parseFromString(body,'text/html')
+    let content = await (await messenger.messages.getAttachmentFile(msg.id,foundMIME)).text()
     const ctEncr = "Content-Type: application/pkcs7-mime"
     const ctSign = "Content-Type: multipart/signed"
     // stop parsing if this message is not smime
-    if (! (body.startsWith(ctEncr) || body.startsWith(ctSign)) ) {
+    if (! (content.startsWith(ctEncr) || content.startsWith(ctSign)) ) {
+        if (Common.VERBOSE_LOGS) console.log(`onDisplayDcrpVeri: msgid:${msg.id} dane-smime.p7m found but not smime: mimePart:${foundMIME}`)
         lastViewedDisplayTabInfo.smime = false
         return
     }
@@ -496,20 +515,21 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
     let time = performance.now()
     // create result objects arrays that will contain the status outputs of decryption/verifiction
     let decrypted: {success:boolean,msg}[] = [] , verified: {success:boolean,msg}[] = []
+    let anyChangeToBody = false
     while (true) {
         // If outermost node is an encrypted smime node, attempt to replace with decrypted
-        if (body.startsWith(ctEncr)) {
-            const result = await decrypt(body)
-            if (result[0] != null) body = result[0]
+        if (content.startsWith(ctEncr)) {
+            const result = await decrypt(content)
+            if (result[0] != null) { content = result[0]; anyChangeToBody = true; }
             decrypted.push(result[1])
             // if last decryption was not successful, do not process any further
             if (!decrypted[decrypted.length-1].success) break
             continue
         }
         // If the outermost node is a signed smime node, attempt to verify and replace with content
-        if (body.startsWith(ctSign)) {
-            const result = await verify(body, sender)
-            if (result[0] != null) body = result[0]
+        if (content.startsWith(ctSign)) {
+            const result = await verify(content, sender)
+            if (result[0] != null) { content = result[0]; anyChangeToBody = true; }
             verified.push(result[1])
             // if last decryption was not successful, do not process any further
             if (!verified[verified.length-1].success) break
@@ -538,11 +558,10 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
     // one final check that the user is still looking at the same message tab orignally clicked on
     if (msg.id != currentlyViewedMessageId) return
 
-    // replace the displayed message with the new processed body
-    await browser.tabs.sendMessage(tab.id,{type:"replace", payload:body} as Message)
+    // replace the displayed message with the new processed body if there were any changes
+    if (anyChangeToBody) {await browser.tabs.sendMessage(tab.id,{type:"replace", payload:content} as Message)}
     // show the final notification bar
     await browser.tabs.sendMessage(tab.id,{type:"notif",payload:finalNotifs.flat()})
-
 }
 /** Blocks thread until sucessful ping to content script on a tab - returns true if successful */
 async function awaitScriptOnTab(tabId:number,repeat?:number,interval?:number): Promise<boolean> {
@@ -624,6 +643,7 @@ async function verify(node:string, sender:string): Promise<[string, {success:boo
             ]
         } ]
     } catch (e) { // any other issues with verification
+        console.error(e)
         return [ null, {
             success: false,
             msg: [
@@ -699,7 +719,7 @@ async function encrypt(tabId:number, overrideBody?:string): Promise<messenger.co
     try {
         let encodedBody = encryptedBody
         detUpdate = { body : encodedBody}
-        await messenger.compose.setComposeDetails(tabId,detUpdate)
+        //await messenger.compose.setComposeDetails(tabId,detUpdate)
         // send update notif with a delay, to allow compose details to update first
         browser.tabs.sendMessage(tabId,{type:"notif", payload:["Encryption complete",`To: <span class="color-green">${composeDets.to[0]}</span>`]})
     } catch (e) {
@@ -738,7 +758,7 @@ async function sign(tabId:number, overrideBody?:string, showEndNotif?:boolean): 
         try {
             let encodedBody = body
             detUpdate = { body: encodedBody}
-            await messenger.compose.setComposeDetails(tabId,detUpdate)
+            //await messenger.compose.setComposeDetails(tabId,detUpdate)
             // send update notif with a delay, to allow compose details to update first
             if (showEndNotif) browser.tabs.sendMessage(tabId,{type:"notif", payload:["Signing complete",`By: <span class="color-green">${options.options.email}</span>`]})
         } catch (e) {
