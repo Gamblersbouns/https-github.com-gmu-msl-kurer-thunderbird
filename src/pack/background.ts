@@ -393,10 +393,10 @@ async function onBeforeSendEncrSign(tab:browser.tabs.Tab, dets:messenger.compose
         }
     }
     if (!cancel && (needEncr || needSign)){
-        let smimeFile = new File([finalDets.body], 'dane-smime.p7m', {type:"text/plain"})
+        let smimeFile = new File([finalDets.body], 'dane-smime.eml', {type:"text/plain"})
         let attached = await messenger.compose.addAttachment(tab.id, {
             file: smimeFile,
-            name: "dane-smime.p7m"
+            name: "dane-smime.eml"
         })
         if (Common.VERBOSE_LOGS) console.log("OnBeforeSend finaldets as attached",JSON.stringify(finalDets.body))
         if (Common.VERBOSE_LOGS) console.dir(attached)
@@ -484,10 +484,10 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
     let aList = await messenger.messages.listAttachments(msg.id)
     let foundMIME = null
     aList.forEach(a=>{
-        if (a.name == "dane-smime.p7m") { foundMIME = a.partName }
+        if (a.name == "dane-smime.eml") { foundMIME = a.partName }
     })
     if (foundMIME == null) {
-        if (Common.VERBOSE_LOGS) console.log(`onDisplayDcrpVeri: msgid:${msg.id} dane-smime.p7m not found`)
+        if (Common.VERBOSE_LOGS) console.log(`onDisplayDcrpVeri: msgid:${msg.id} dane-smime.eml not found`)
         return
     }
     /** The workable string representation of the plaintext message body */
@@ -496,7 +496,7 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
     const ctSign = "Content-Type: multipart/signed"
     // stop parsing if this message is not smime
     if (! (content.startsWith(ctEncr) || content.startsWith(ctSign)) ) {
-        if (Common.VERBOSE_LOGS) console.log(`onDisplayDcrpVeri: msgid:${msg.id} dane-smime.p7m found but not smime: mimePart:${foundMIME}`)
+        if (Common.VERBOSE_LOGS) console.log(`onDisplayDcrpVeri: msgid:${msg.id} dane-smime.eml found but not smime: mimePart:${foundMIME}`)
         lastViewedDisplayTabInfo.smime = false
         return
     }
