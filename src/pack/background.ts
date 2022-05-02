@@ -13,6 +13,8 @@ import * as Common from "./common";
 let options: Options = {options:{}}
 fetchOptionsOnStartup()
 
+let atFileNamesAccept = ['dane-smime.eml','dane-smime.p7m','kurer-smime.eml','kurer-smime.p7m','dane-smime.kurer']
+let atFileNameSend = 'dane-smime.kurer'
 /** Open communication ports among foreground scripts, mostly to stream updates to options and logs */
 let ports: browser.runtime.Port[] = []
 let encryptFlag = false
@@ -393,10 +395,10 @@ async function onBeforeSendEncrSign(tab:browser.tabs.Tab, dets:messenger.compose
         }
     }
     if (!cancel && (needEncr || needSign)){
-        let smimeFile = new File([finalDets.body], 'dane-smime.eml', {type:"text/plain"})
+        let smimeFile = new File([finalDets.body], atFileNameSend, {type:"text/plain"})
         let attached = await messenger.compose.addAttachment(tab.id, {
             file: smimeFile,
-            name: "dane-smime.eml"
+            name: atFileNameSend
         })
         if (Common.VERBOSE_LOGS) console.log("OnBeforeSend finaldets as attached",JSON.stringify(finalDets.body))
         if (Common.VERBOSE_LOGS) console.dir(attached)
@@ -482,12 +484,12 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
     if (!sender) return
     sender = getEmailFromRecipient(sender)
     let aList = await messenger.messages.listAttachments(msg.id)
-    let foundMIME = null
+    let foundMIME = null; let foundName = null;
     aList.forEach(a=>{
-        if (a.name == "dane-smime.eml") { foundMIME = a.partName }
+        if ( atFileNamesAccept.includes( a.name )) { foundMIME = a.partName; foundName = a.name }
     })
     if (foundMIME == null) {
-        if (Common.VERBOSE_LOGS) console.log(`onDisplayDcrpVeri: msgid:${msg.id} dane-smime.eml not found`)
+        if (Common.VERBOSE_LOGS) console.log(`onDisplayDcrpVeri: msgid:${msg.id} attachment with name ${atFileNamesAccept} not found`)
         return
     }
     /** The workable string representation of the plaintext message body */
@@ -496,7 +498,7 @@ async function onDisplayDcrpVeri(tab:browser.tabs.Tab, msg:messenger.messages.Me
     const ctSign = "Content-Type: multipart/signed"
     // stop parsing if this message is not smime
     if (! (content.startsWith(ctEncr) || content.startsWith(ctSign)) ) {
-        if (Common.VERBOSE_LOGS) console.log(`onDisplayDcrpVeri: msgid:${msg.id} dane-smime.eml found but not smime: mimePart:${foundMIME}`)
+        if (Common.VERBOSE_LOGS) console.log(`onDisplayDcrpVeri: msgid:${msg.id} attachment with name ${foundName} found but not smime: mimePart:${foundMIME}`)
         lastViewedDisplayTabInfo.smime = false
         return
     }
