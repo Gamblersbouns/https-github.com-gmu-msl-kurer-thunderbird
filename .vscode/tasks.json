@@ -19,6 +19,35 @@
 			],
 			"group": "build",
 			"label": "tsc: watch - src/tsconfig.json"
+		},
+		{
+			"label": "Export to xpi",
+			"type": "shell",
+			"windows": {
+				"command": "C:\\\"Program Files\"\\7-Zip\\7z.exe",
+				"args": [
+					"a",
+					"-tzip",
+					"-aoa",
+					"-mx=0",
+					"kurer_tb.xpi",
+					".\\*.html",
+					".\\manifest.json",
+					".\\scripts",
+					".\\images",
+					".\\res",
+					".\\css"
+				]
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"group": "build"
 		}
 	]
 }
