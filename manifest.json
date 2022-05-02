@@ -3,11 +3,11 @@
     "name": "Kurer - DANE-powered Secure Email",
     "short_name": "Kurer",
     "description": "S/MIME encrypted secure email functionality, powered by DNS-based Authentication of Named Entities (DANE).",
-    "version": "1.0",
+    "version": "v0.2.1",
     "author": "Aonova",
     "applications": {
         "gecko": {
-            "id": "kurer@aonova.ddns.com",
+            "id": "kurer-thunderbird@kurer.daneportal.net",
             "strict_min_version": "91.0"
         }
     },

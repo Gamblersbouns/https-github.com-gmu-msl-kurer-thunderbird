@@ -13,6 +13,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/he": "^1.1.2",
+    "@types/jquery": "^3.5.14",
     "@types/node": "^16.4.13",
     "@types/node-forge": "^0.10.3",
     "browserify": "^17.0.0",
